@@ -1,16 +1,4 @@
 
-#ifdef __APPLE__
-
-#include <OpenGL/OpenGL.h>
-#include <OpenGL/gl3.h>
-
-#else
-
-#include <GL/glew.h>
-
-#endif
-
-#include <GLFW/glfw3.h>
 #include <blocken.h>
 #include <fstream>
 #include <sstream>
@@ -24,11 +12,6 @@ int main(void)
     /* Initialize the library */
     if (!glfwInit())
         return -1;
-
-    #ifdef GLEW_VERSION_4_1
-    if (!glewInit())
-        return -1;
-    #endif
 
     glfwDefaultWindowHints();
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);

@@ -9,15 +9,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 find_package(OpenGL)
 
-set(GLEW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extern/glew)
 set(GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extern/glfw)
-include_directories(${GLEW_DIR}/include)
 include_directories(${GLFW_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-set(COMMON_LIBS
-    ${OPENGL_LIBRARIES}
-    ${GLFW_DIR}/lib/libglfw3.a
-)
 
 set(PLATFORM_LIBS "")
 if(APPLE)
@@ -32,14 +26,11 @@ if(APPLE)
             ${COCOA_FRAMEWORK}
             ${IOKIT_FRAMEWORK}
             ${CORE_FOUNDATION_FRAMEWORK}
-            ${CORE_VIDEO_FRAMEWORK})
-else()
-    set(PLATFORM_LIBS
-            ${GLEW_DIR}/build/cmake/lib/libGLEWd.dylib
+            ${CORE_VIDEO_FRAMEWORK}
+            ${GLFW_DIR}/lib/libglfw3.a
     )
 endif()
 
-
 set(SOURCE_FILES src/main.cpp)
 add_executable(blockens ${SOURCE_FILES})
-target_link_libraries(blockens ${COMMON_LIBS} ${PLATFORM_LIBS})
+target_link_libraries(blockens ${OPENGL_LIBRARIES} ${PLATFORM_LIBS})
