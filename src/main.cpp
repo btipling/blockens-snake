@@ -37,25 +37,48 @@ int main(void)
 
     GLuint rendering_program;
     GLuint vertex_array_object[1];
+    GLuint buffers[1];
+    enum Attrib_IDS { vPosition = 0 };
+    const GLuint numVertices = 8;
+    GLfloat vertices[numVertices][4] = {
+
+        { -0.90f, 0.90f, 0.50f, 1.0f },
+        { 0.90f, 0.90f, 0.50f, 1.0f },
+
+        { -0.90f, -0.90f, 0.50f, 1.0f },
+        { 0.90f, -0.90f, 0.50f, 1.0f },
+
+        { 0.90f, 0.90f, 0.50f, 1.0f },
+        { 0.90f, -0.90f, 0.50f, 1.0f },
+
+
+        { -0.90f, 0.90f, 0.50f, 1.0f },
+        { -0.90f, -0.90f, 0.50f, 1.0f },
+    };
 
     rendering_program = compile_shaders();
     glGenVertexArrays(1, vertex_array_object);
     glBindVertexArray(vertex_array_object[0]);
-
+    glGenBuffers(1, buffers);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+    glEnableVertexAttribArray(vPosition);
     while (!glfwWindowShouldClose(window)) {
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
         glClearColor(0, 1, 0, 1);
-        static const GLfloat bg[] = { 1.0, 0.0, 0.0, 1.0 };
+        static const GLfloat bg[] = { 0.0, 0.0, 0.0, 1.0 };
         glClearBufferfv(GL_COLOR, 0, bg);
 
         glUseProgram(rendering_program);
-        glPointSize(40.0f);
+//        glPointSize(40.0f);
 
-        glDrawArrays(GL_POINTS, 0, 1);
+        glDrawArrays(GL_LINES, 0, numVertices);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+        sleep(1);
     }
 
     glfwTerminate();

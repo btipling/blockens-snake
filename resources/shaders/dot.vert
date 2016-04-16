@@ -1,4 +1,6 @@
 #version 410 core
+
+layout(location = 0) in vec4 vPosition;
 void main(void) {
-    gl_Position = vec4(0.0, 0.0, 0.5, 1.0);
+    gl_Position = vPosition;
 }
