@@ -37,27 +37,40 @@ int main(void)
     std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
 
     GLuint rendering_program;
-    GLuint vertex_array_object[1];
-    GLuint buffers[1];
-    enum Attrib_IDS { vPosition = 0 };
-    const GLuint numVertices = 8;
-    GLfloat vertices[numVertices][4] = {
-
-        { -1.0f, 1.0f, 0.50f, 1.0f },
-        { 1.0f, 1.0f, 0.50f, 1.0f },
-
-        { -1.0f, -1.0f, 0.50f, 1.0f },
-        { 1.0f, -1.0f, 0.50f, 1.0f },
-
-        { 1.0f, 1.0f, 0.50f, 1.0f },
-        { 1.0f, -1.0f, 0.50f, 1.0f },
-
-
-        { -1.0f, 1.0f, 0.50f, 1.0f },
-        { -1.0f, -1.0f, 0.50f, 1.0f },
-    };
 
     rendering_program = compile_shaders();
+
+    while (!glfwWindowShouldClose(window)) {
+
+        app_render(rendering_program, window);
+    }
+
+    glfwTerminate();
+    glDeleteProgram(rendering_program);
+    return 0;
+}
+
+void setup_vertices(GLuint numVertices) {
+    GLuint vertex_array_object[1];
+    GLuint buffers[1];
+    const int n = 8;
+    enum Attrib_IDS { vPosition = 0 };
+    GLfloat vertices[n][4] = {
+
+            { -1.0f, 1.0f, 0.50f, 1.0f },
+            { 1.0f, 1.0f, 0.50f, 1.0f },
+
+            { -1.0f, -1.0f, 0.50f, 1.0f },
+            { 1.0f, -1.0f, 0.50f, 1.0f },
+
+            { 1.0f, 1.0f, 0.50f, 1.0f },
+            { 1.0f, -1.0f, 0.50f, 1.0f },
+
+
+            { -1.0f, 1.0f, 0.50f, 1.0f },
+            { -1.0f, -1.0f, 0.50f, 1.0f },
+    };
+
     glGenVertexArrays(1, vertex_array_object);
     glBindVertexArray(vertex_array_object[0]);
     glGenBuffers(1, buffers);
@@ -65,6 +78,12 @@ int main(void)
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
     glEnableVertexAttribArray(vPosition);
+}
+
+int column_size = 0;
+int direction = 1;
+
+void setup_uniform(GLuint rendering_program) {
 
     GLuint uboIndex;
     GLint uboSize;
@@ -72,8 +91,8 @@ int main(void)
     enum { NumColumns, GridColor, NumUniforms };
 
     const char *names[NumUniforms] = {
-      "num_columns",
-      "grid_color",
+            "num_columns",
+            "grid_color",
     };
 
     GLuint indexes[NumUniforms];
@@ -91,17 +110,19 @@ int main(void)
     glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_TYPE, type);
 
 
-    GLint num_columns = 10;
-    GLfloat grid_color[] = { 1.0f, 0.0f, 1.0f, 1.0f };
+    if (column_size >= 10) {
+        direction = -1;
+    } else if (column_size == 0) {
+        direction = 1;
+    }
 
-    std::cout << "What is stuff index of NumColumns " << indexes[NumColumns] << "?\n";
-    std::cout << "What is stuff index of GridColor " << indexes[GridColor] << "?\n";
-    std::cout << "What is stuff offset of NumColumns " << offset[NumColumns] << "?\n";
-    std::cout << "What is stuff offset of GridColor " << offset[GridColor] << "?\n";
-    std::cout << "What is stuff size of NumColumns " << size[NumColumns] << "?\n";
-    std::cout << "What is stuff size of GridColor " << size[GridColor] << "?\n";
-    std::cout << "What is stuff type of GridColor " << type[NumColumns] << " is right? " << (GL_INT == type[NumColumns]) << "?\n";
-    std::cout << "What is stuff type of GridColor " << type[GridColor] << " is right? " << (GL_FLOAT_VEC4 == type[GridColor]) << "?\n";
+    if (direction == 1) {
+        column_size++;
+    } else {
+        column_size--;
+    }
+    GLint num_columns = column_size;
+    GLfloat grid_color[] = { 1.0f, 0.0f, 1.0f, 1.0f };
 
     void *buffer;
 
@@ -118,40 +139,24 @@ int main(void)
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
     glBufferData(GL_UNIFORM_BUFFER, uboSize, buffer, GL_STATIC_DRAW);
+}
 
-    int prev = -1;
-    int fps = 0;
-    int curFPS = 0;
+void app_render(GLuint rendering_program, GLFWwindow* window) {
+    const GLuint numVertices = 8;
+    setup_vertices(numVertices);
+    setup_uniform(rendering_program);
+    /* Render here */
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(0, 1, 0, 1);
+    static const GLfloat bg[] = { 0.0, 0.0, 0.0, 1.0 };
+    glClearBufferfv(GL_COLOR, 0, bg);
 
-    while (!glfwWindowShouldClose(window)) {
-        /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
-        glClearColor(0, 1, 0, 1);
-        static const GLfloat bg[] = { 0.0, 0.0, 0.0, 1.0 };
-        glClearBufferfv(GL_COLOR, 0, bg);
+    glUseProgram(rendering_program);
+    glDrawArraysInstanced(GL_LINES, 0, numVertices, 3);
 
-        glUseProgram(rendering_program);
-//        glPointSize(40.0f);
 
-//        glDrawArrays(GL_LINES, 0, numVertices);
-        glDrawArraysInstanced(GL_LINES, 0, numVertices, 3);
-        int cur = floor(glfwGetTime());
-        if (cur != prev + 1) {
-            fps = curFPS;
-            prev++;
-            curFPS = 1;
-            std::cout << "Rendering " << fps << " fps\n";
-        } else {
-            curFPS++;
-        }
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
-
-    glfwTerminate();
-    glDeleteProgram(rendering_program);
-    return 0;
+    glfwSwapBuffers(window);
+    glfwPollEvents();
 }
 
 GLuint compile_shaders(void) {

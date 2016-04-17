@@ -8,3 +8,6 @@
 
 std::string get_shader(std::string path);
 GLuint compile_shaders(void);
+void app_render(GLuint rendering_program, GLFWwindow *window);
+void setup_uniform(GLuint);
+
