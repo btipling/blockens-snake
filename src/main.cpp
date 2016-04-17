@@ -42,18 +42,18 @@ int main(void)
     const GLuint numVertices = 8;
     GLfloat vertices[numVertices][4] = {
 
-        { -0.90f, 0.90f, 0.50f, 1.0f },
-        { 0.90f, 0.90f, 0.50f, 1.0f },
+        { -1.0f, 1.0f, 0.50f, 1.0f },
+        { 1.0f, 1.0f, 0.50f, 1.0f },
 
-        { -0.90f, -0.90f, 0.50f, 1.0f },
-        { 0.90f, -0.90f, 0.50f, 1.0f },
+        { -1.0f, -1.0f, 0.50f, 1.0f },
+        { 1.0f, -1.0f, 0.50f, 1.0f },
 
-        { 0.90f, 0.90f, 0.50f, 1.0f },
-        { 0.90f, -0.90f, 0.50f, 1.0f },
+        { 1.0f, 1.0f, 0.50f, 1.0f },
+        { 1.0f, -1.0f, 0.50f, 1.0f },
 
 
-        { -0.90f, 0.90f, 0.50f, 1.0f },
-        { -0.90f, -0.90f, 0.50f, 1.0f },
+        { -1.0f, 1.0f, 0.50f, 1.0f },
+        { -1.0f, -1.0f, 0.50f, 1.0f },
     };
 
     rendering_program = compile_shaders();
@@ -74,11 +74,12 @@ int main(void)
         glUseProgram(rendering_program);
 //        glPointSize(40.0f);
 
-        glDrawArrays(GL_LINES, 0, numVertices);
+//        glDrawArrays(GL_LINES, 0, numVertices);
+        glDrawArraysInstanced(GL_LINES, 0, numVertices, 3);
+
 
         glfwSwapBuffers(window);
         glfwPollEvents();
-        sleep(1);
     }
 
     glfwTerminate();
@@ -109,6 +110,9 @@ GLuint compile_shaders(void) {
 
     if (success != GL_TRUE) {
         std::cout << "Vertex shader didn't compile homes.  " << log_size << " \n";
+        char* log = new char[log_size];
+        glGetShaderInfoLog(vertex_shader, log_size, NULL, log);
+        std::cout << "Vertex shader error log: \n" << log << " \n";
     } else {
         std::cout << "Vertex shader did compile homes. " << log_size << " \n";
     }
@@ -118,10 +122,13 @@ GLuint compile_shaders(void) {
     glCompileShader(fragment_shader);
 
     glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
-    glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH, &log_size);
+    glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH, &log_size);
 
     if (success != GL_TRUE) {
         std::cout << "Frag shader didn't compile homes. " << log_size << " \n";
+        char* log = new char[log_size];
+        glGetShaderInfoLog(fragment_shader, log_size, NULL, log);
+        std::cout << "Frag shader error log: \n" << log << " \n";
     } else {
         std::cout << "Frag shader did compile homes. " << log_size << " \n";
     }
