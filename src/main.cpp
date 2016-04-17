@@ -164,10 +164,10 @@ GLuint compile_shaders(void) {
     GLuint fragment_shader;
     GLuint program;
 
-    std::string vertex_shader_source_string = get_shader("dot.vert");
+    std::string vertex_shader_source_string = get_shader("grid.vert");
     const GLchar * vertex_shader_source = vertex_shader_source_string.c_str();
 
-    std::string fragment_shader_source_string = get_shader("dot.frag");
+    std::string fragment_shader_source_string = get_shader("grid.frag");
     const GLchar * fragment_shader_source = fragment_shader_source_string.c_str();
 
     vertex_shader = glCreateShader(GL_VERTEX_SHADER);
