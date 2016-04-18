@@ -19,8 +19,7 @@ GLfloat bg_color[4];
 
 bool win_focused = true;
 
-int main(void)
-{
+int main() {
     GLFWwindow* window;
 
     if (!glfwInit()) {
@@ -245,7 +244,7 @@ GLuint compile_shaders(void) {
     return program;
 }
 
-std::string get_working_path()  {
+std::string get_working_path() {
     char temp[MAXPATHLEN];
     return ( getcwd(temp, MAXPATHLEN) ? std::string( temp ) : std::string("") );
 }
