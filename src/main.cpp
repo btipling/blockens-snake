@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <sys/param.h>
 
-
 GLfloat blue_green[4];
 GLfloat yellow_green[4];
 GLfloat light_brown[4];
@@ -17,6 +16,7 @@ GLfloat line_color[4];
 GLfloat bg_color[4];
 
 bool win_focused = true;
+
 
 int main() {
     GLFWwindow* window;
@@ -65,6 +65,7 @@ int main() {
     return 0;
 }
 
+
 void init_colors() {
     rgba_to_color(53, 208, 173, 1, blue_green);
     rgba_to_color(220, 240, 143, 1, yellow_green);
@@ -78,6 +79,7 @@ void init_colors() {
     set_color(line_color, blue_green);
 }
 
+
 void window_focus_callback(GLFWwindow* window, int focused) {
     if (focused) {
         win_focused = true;
@@ -86,9 +88,11 @@ void window_focus_callback(GLFWwindow* window, int focused) {
     }
 }
 
+
 void set_color(GLfloat to_color[4], GLfloat fro_color[4]) {
     memcpy(to_color, fro_color, sizeof(GLfloat) * 4);
 }
+
 
 void setup_vertices() {
     GLuint vertex_array_object[1];
@@ -105,7 +109,6 @@ void setup_vertices() {
 
             { 1.0f, 1.0f, 0.50f, 1.0f },
             { 1.0f, -1.0f, 0.50f, 1.0f },
-
 
             { -1.0f, 1.0f, 0.50f, 1.0f },
             { -1.0f, -1.0f, 0.50f, 1.0f },
@@ -169,6 +172,7 @@ void setup_uniform(GLuint rendering_program, GLint num_columns, GLint num_rows) 
     glBufferData(GL_UNIFORM_BUFFER, uboSize, buffer, GL_STATIC_DRAW);
 }
 
+
 void render_app(GLuint rendering_program, GLFWwindow *window) {
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0, 1, 0, 1);
@@ -185,6 +189,7 @@ void render_app(GLuint rendering_program, GLFWwindow *window) {
 
     glfwSwapBuffers(window);
 }
+
 
 GLuint compile_shaders(void) {
     GLuint vertex_shader;
@@ -243,10 +248,12 @@ GLuint compile_shaders(void) {
     return program;
 }
 
+
 std::string get_working_path() {
     char temp[MAXPATHLEN];
     return ( getcwd(temp, MAXPATHLEN) ? std::string( temp ) : std::string("") );
 }
+
 
 std::string get_shader(std::string path) {
     std::cout << "Current cwd is " << get_working_path() << " !\n";
@@ -257,6 +264,7 @@ std::string get_shader(std::string path) {
     vertexBuffer << vertexShaderFile.rdbuf();
     return vertexBuffer.str();
 }
+
 
 void rgba_to_color(int r, int g, int b, int a, GLfloat color[4]) {
     color[0] = r/255.0f;
