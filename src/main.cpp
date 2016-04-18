@@ -4,7 +4,20 @@
 #include <sstream>
 #include <unistd.h>
 #include <sys/param.h>
-#include <math.h>
+
+
+GLfloat blue_green[4];
+GLfloat yellow_green[4];
+GLfloat light_brown[4];
+GLfloat dark_brown[4];
+GLfloat brown[4];
+GLfloat white[4];
+GLfloat black[4];
+
+GLfloat line_color[4];
+GLfloat bg_color[4];
+
+bool win_focused = true;
 
 int main(void)
 {
@@ -20,7 +33,7 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+    window = glfwCreateWindow(640, 640, "blockens", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -30,6 +43,8 @@ int main(void)
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
 
+    glfwSetWindowFocusCallback(window, window_focus_callback);
+
     /* Loop until the user closes the window */
     std::cout << "GL Version: " << glGetString(GL_VERSION) << "\n";
     std::cout << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << "\n";
@@ -38,11 +53,14 @@ int main(void)
 
     GLuint rendering_program;
 
+    init_colors();
     rendering_program = compile_shaders();
 
     while (!glfwWindowShouldClose(window)) {
-
-        app_render(rendering_program, window);
+        if (win_focused) {
+            render_app(rendering_program, window);
+        }
+        glfwPollEvents();
     }
 
     glfwTerminate();
@@ -50,7 +68,32 @@ int main(void)
     return 0;
 }
 
-void setup_vertices(GLuint numVertices) {
+void init_colors() {
+    rgba_to_color(53, 208, 173, 1, blue_green);
+    rgba_to_color(220, 240, 143, 1, yellow_green);
+    rgba_to_color(227, 203, 156, 1, light_brown);
+    rgba_to_color(210, 158, 79, 1, brown);
+    rgba_to_color(191, 89, 34, 1, dark_brown);
+    rgba_to_color(255, 255, 255, 1, white);
+    rgba_to_color(51, 51, 51, 1, black);
+
+    set_color(bg_color, white);
+    set_color(line_color, blue_green);
+}
+
+void window_focus_callback(GLFWwindow* window, int focused) {
+    if (focused) {
+        win_focused = true;
+    } else {
+        win_focused = false;
+    }
+}
+
+void set_color(GLfloat to_color[4], GLfloat fro_color[4]) {
+    memcpy(to_color, fro_color, sizeof(GLfloat) * 4);
+}
+
+void setup_vertices() {
     GLuint vertex_array_object[1];
     GLuint buffers[1];
     const int n = 8;
@@ -80,19 +123,18 @@ void setup_vertices(GLuint numVertices) {
     glEnableVertexAttribArray(vPosition);
 }
 
-int column_size = 0;
-int direction = 1;
 
-void setup_uniform(GLuint rendering_program) {
+void setup_uniform(GLuint rendering_program, GLint num_columns, GLint num_rows) {
 
     GLuint uboIndex;
     GLint uboSize;
     GLuint ubo;
-    enum { NumColumns, GridColor, NumUniforms };
+    enum { NumColumns, NumRows, GridColor, NumUniforms };
 
     const char *names[NumUniforms] = {
             "num_columns",
-            "grid_color",
+            "num_rows",
+            "grid_colors",
     };
 
     GLuint indexes[NumUniforms];
@@ -109,20 +151,8 @@ void setup_uniform(GLuint rendering_program) {
     glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_SIZE, size);
     glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_TYPE, type);
 
-
-    if (column_size >= 10) {
-        direction = -1;
-    } else if (column_size == 0) {
-        direction = 1;
-    }
-
-    if (direction == 1) {
-        column_size++;
-    } else {
-        column_size--;
-    }
-    GLint num_columns = column_size;
-    GLfloat grid_color[] = { 1.0f, 0.0f, 1.0f, 1.0f };
+    GLfloat grid_colors[4][4];
+    set_color(grid_colors[0], line_color);
 
     void *buffer;
 
@@ -133,7 +163,8 @@ void setup_uniform(GLuint rendering_program) {
     }
 
     memcpy(ADDRESS(buffer, offset[NumColumns]), &num_columns, sizeof(GLint));
-    memcpy(ADDRESS(buffer, offset[GridColor]), &grid_color, sizeof(GLfloat) * 4);
+    memcpy(ADDRESS(buffer, offset[NumRows]), &num_rows, sizeof(GLint));
+    memcpy(ADDRESS(buffer, offset[GridColor]), &grid_colors, sizeof(GLfloat) * 4 * 4);
 
     glGenBuffers(1, &ubo);
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
@@ -141,22 +172,21 @@ void setup_uniform(GLuint rendering_program) {
     glBufferData(GL_UNIFORM_BUFFER, uboSize, buffer, GL_STATIC_DRAW);
 }
 
-void app_render(GLuint rendering_program, GLFWwindow* window) {
-    const GLuint numVertices = 8;
-    setup_vertices(numVertices);
-    setup_uniform(rendering_program);
-    /* Render here */
+void render_app(GLuint rendering_program, GLFWwindow *window) {
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0, 1, 0, 1);
-    static const GLfloat bg[] = { 0.0, 0.0, 0.0, 1.0 };
-    glClearBufferfv(GL_COLOR, 0, bg);
+    glClearBufferfv(GL_COLOR, 0, bg_color);
+
+    const GLuint numVertices = 8;
+    GLint num_columns = 25;
+    GLint num_rows = 25;
+    setup_vertices();
+    setup_uniform(rendering_program, num_columns, num_rows);
 
     glUseProgram(rendering_program);
-    glDrawArraysInstanced(GL_LINES, 0, numVertices, 3);
-
+    glDrawArraysInstanced(GL_LINES, 0, numVertices, num_columns * num_rows);
 
     glfwSwapBuffers(window);
-    glfwPollEvents();
 }
 
 GLuint compile_shaders(void) {
@@ -229,4 +259,11 @@ std::string get_shader(std::string path) {
     std::ostringstream vertexBuffer;
     vertexBuffer << vertexShaderFile.rdbuf();
     return vertexBuffer.str();
+}
+
+void rgba_to_color(int r, int g, int b, int a, GLfloat color[4]) {
+    color[0] = r/255.0f;
+    color[1] = g/255.0f;
+    color[2] = b/255.0f;
+    color[3] = a/255.0f;
 }

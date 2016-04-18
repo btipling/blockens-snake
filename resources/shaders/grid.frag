@@ -3,11 +3,12 @@ flat in int instance_id;
 
 uniform GridData {
     int num_columns;
-    vec4 grid_color;
+    int num_rows;
+    vec4 grid_colors[4];
 };
 
 out vec4 color;
 
 void main(void) {
-    color = grid_color;
+    color = grid_colors[0];
 }

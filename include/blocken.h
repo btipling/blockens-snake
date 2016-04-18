@@ -8,6 +8,11 @@
 
 std::string get_shader(std::string path);
 GLuint compile_shaders(void);
-void app_render(GLuint rendering_program, GLFWwindow *window);
-void setup_uniform(GLuint);
+void rgba_to_color(int r, int g, int b, int a, GLfloat color[4]);
+void render_app(GLuint rendering_program, GLFWwindow *window);
+void setup_uniform(GLuint rendering_program, GLuint num_columns, GLint num_rows);
+void setup_vertices();
+void init_colors();
+void set_color(GLfloat[4], GLfloat[4]);
+void window_focus_callback(GLFWwindow* window, int focused);
 
