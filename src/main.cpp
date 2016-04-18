@@ -23,9 +23,10 @@ int main(void)
 {
     GLFWwindow* window;
 
-    /* Initialize the library */
-    if (!glfwInit())
-        return -1;
+    if (!glfwInit()) {
+        std::cout << "Failed to init glfw.\n";
+        exit(EXIT_FAILURE);
+    }
 
     glfwDefaultWindowHints();
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -34,18 +35,16 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
     window = glfwCreateWindow(640, 640, "blockens", NULL, NULL);
-    if (!window)
-    {
+    if (!window) {
+        std::cout << "Failed to init glfw window.\n";
         glfwTerminate();
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
-    /* Make the window's context current */
     glfwMakeContextCurrent(window);
 
     glfwSetWindowFocusCallback(window, window_focus_callback);
 
-    /* Loop until the user closes the window */
     std::cout << "GL Version: " << glGetString(GL_VERSION) << "\n";
     std::cout << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << "\n";
     std::cout << "Vendor: " << glGetString(GL_VENDOR) << std::endl;
