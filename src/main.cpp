@@ -162,6 +162,27 @@ void setup_uniform(GLuint rendering_program, GLint num_columns, GLint num_rows) 
         exit(EXIT_FAILURE);
     }
 
+    /*
+     * The grid is made up of values 0 to n that starts at top left goes num_columns across and n @ num_columns + 1
+     * starts next row. Determining n's column is n % num_columns and n's row is n / num_rows. Going from x,y (column,
+     * row) to n would be y * num_columns + x = n;
+     *
+     * Remaining shader logic:
+     *
+     * If is_block_vertex == true, vertex shader uses gl_InstanceID to query position_values for a new mapped
+     * gl_InstanceID'like variable to use instead of gl_InstanceID. The frag shader will use this too, but to query
+     * color. If false frag shader picks grid line color at 0.
+     *
+     * inside: position_values are 2 values per instance:
+     *
+     *   1st value: n position where block goes.
+     *   2nd value: i index of what color to use from grid_color.
+     *
+     * A block is made up of two triangles facing each other to form a square.
+     * Non blocks are lines that draw a square, a better grid would just to have lines that draw across the
+     * entire drawing area horizontally and vertically.
+     */
+
     memcpy(ADDRESS(buffer, offset[NumColumns]), &num_columns, sizeof(GLint));
     memcpy(ADDRESS(buffer, offset[NumRows]), &num_rows, sizeof(GLint));
     memcpy(ADDRESS(buffer, offset[GridColor]), &grid_colors, sizeof(GLfloat) * 4 * 4);
