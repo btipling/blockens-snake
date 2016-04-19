@@ -3,12 +3,12 @@
 layout (location = 0) in vec4 v_position;
 uniform bool is_block_vertex;
 
+const int num_columns = 25;
+const int num_rows = 25;
 uniform GridData {
     vec4 grid_colors[4];
-    int position_values[25 * 25]; // Max 50x50 grid.
+    int position_values[num_columns * num_rows]; // Max 50x50 grid.
 };
-int num_columns = 25;
-int num_rows = 25;
 flat out vec4 vert_color;
 flat out int do_discard;
 
