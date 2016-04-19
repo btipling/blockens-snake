@@ -18,12 +18,12 @@ GLfloat block_color[4];
 GLfloat grow_block_color[4];
 GLfloat speed_block_color[4];
 
-const GLint max_positions = 25 * 25;
+const GLint num_columns = 25;
+const GLint num_rows = 25;
+const GLint max_positions = num_columns * num_rows;
 GLint position_values[max_positions];
 
 bool win_focused = true;
-GLint num_columns = 25;
-GLint num_rows = 25;
 
 enum { MoveLeft, MoveRight, MoveUp, MoveDown };
 int current_movement = MoveLeft;
