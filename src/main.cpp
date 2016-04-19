@@ -22,7 +22,10 @@ const GLint max_positions = 25 * 25;
 GLint position_values[max_positions];
 
 bool win_focused = true;
+GLint num_columns = 25;
+GLint num_rows = 25;
 
+double tickInterval = 0.005; // In seconds
 /*
  * The grid is made up of values 0 to n that starts at top left goes num_columns across and n @ num_columns + 1
  * starts next row. Determining n's column is n % num_columns and n's row is n / num_rows. Going from x,y (column,
@@ -78,9 +81,16 @@ int main() {
     init_colors();
     init_positions();
     rendering_program = compile_shaders();
+    double lastTime = glfwGetTime();
 
     while (!glfwWindowShouldClose(window)) {
         if (win_focused) {
+            double now = glfwGetTime();
+            double delta = now - lastTime;
+            if (delta > tickInterval) {
+                do_movement();
+                lastTime = now;
+            }
             render_app(rendering_program, window);
         }
         glfwPollEvents();
@@ -112,7 +122,45 @@ void init_positions() {
     for (int i = 0; i < max_positions; i++) {
         position_values[i] = -1;
     }
-    position_values[0] = 1;
+    position_values[xy_to_n(12, 5)] = 1;
+}
+
+void n_to_xy(int n, int *x, int *y) {
+    *x = n % num_columns;
+    *y = n / num_rows;
+}
+
+int xy_to_n(int x, int y) {
+    return y * num_columns + x;
+}
+
+void do_movement() {
+    int move_n = -1;
+    for (int i = 0; i < max_positions; i++) {
+        if (position_values[i] == 1 ) {
+            int x;
+            int y;
+            n_to_xy(i, &x, &y);
+            x++;
+            if (x >= num_columns) {
+                x = 0;
+                y++;
+            }
+            if (x < 0) {
+                x = num_columns - 1;
+                y--;
+            }
+            if (y < 0) {
+                y = num_rows - 1;
+            }
+            if (y >= num_rows) {
+                y = 0;
+            }
+            move_n = xy_to_n(x, y);
+            position_values[i] = 0;
+        }
+    }
+    position_values[move_n] = 1;
 }
 
 
@@ -184,7 +232,7 @@ void setup_block_vertices() {
     glEnableVertexAttribArray(vPosition);
 }
 
-void setup_uniform(GLuint rendering_program, GLint num_columns, GLint num_rows) {
+void setup_uniform(GLuint rendering_program) {
 
     GLuint uboIndex;
     GLint uboSize;
@@ -254,9 +302,7 @@ void render_app(GLuint rendering_program, GLFWwindow *window) {
 
     GLint is_block_index = glGetUniformLocation(rendering_program, "is_block_vertex");
     const GLuint numVertices = 8;
-    GLint num_columns = 25;
-    GLint num_rows = 25;
-    setup_uniform(rendering_program, num_columns, num_rows);
+    setup_uniform(rendering_program);
     glUseProgram(rendering_program);
 
     glUniform1i(is_block_index, GL_TRUE);

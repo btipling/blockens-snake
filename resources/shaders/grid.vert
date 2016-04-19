@@ -17,7 +17,8 @@ void main(void) {
     do_discard = 0;
     if (is_block_vertex) {
         if (position_values[gl_InstanceID] > 0) {
-            vert_color = grid_colors[1];
+            int color_index = position_values[gl_InstanceID];
+            vert_color = grid_colors[color_index];
         } else {
             do_discard = 1;
         }

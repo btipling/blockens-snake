@@ -7,14 +7,17 @@
 #define ADDRESS(p,o) ((void *)(((char *)p)+(o)))
 
 std::string get_shader(std::string path);
-GLuint compile_shaders(void);
-void rgba_to_color(int r, int g, int b, int a, GLfloat color[4]);
-void render_app(GLuint rendering_program, GLFWwindow *window);
-void setup_uniform(GLuint rendering_program, GLuint num_columns, GLint num_rows);
+GLuint compile_shaders();
+void rgba_to_color(int, int, int, int, GLfloat[4]);
+void render_app(GLuint, GLFWwindow*);
+void setup_uniform(GLuint);
 void setup_grid_vertices();
 void setup_block_vertices();
 void init_colors();
+void do_movement();
 void init_positions();
 void set_color(GLfloat[4], GLfloat[4]);
-void window_focus_callback(GLFWwindow* window, int focused);
+void window_focus_callback(GLFWwindow*, int);
+void n_to_xy(int, int*, int*);
+int xy_to_n(int, int);
 
