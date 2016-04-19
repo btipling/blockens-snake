@@ -25,7 +25,13 @@ bool win_focused = true;
 GLint num_columns = 25;
 GLint num_rows = 25;
 
-double tickInterval = 0.005; // In seconds
+enum { MoveLeft, MoveRight, MoveUp, MoveDown };
+int current_movement = MoveLeft;
+
+// In seconds.
+double base_tick_interval = 0.125;
+double key_press_speed_increase = -0.12;
+double cur_tick_interval = base_tick_interval;
 /*
  * The grid is made up of values 0 to n that starts at top left goes num_columns across and n @ num_columns + 1
  * starts next row. Determining n's column is n % num_columns and n's row is n / num_rows. Going from x,y (column,
@@ -79,6 +85,7 @@ int main() {
 
     GLuint rendering_program;
 
+    init_inputs(window);
     init_colors();
     init_positions();
     rendering_program = compile_shaders();
@@ -88,7 +95,7 @@ int main() {
         if (win_focused) {
             double now = glfwGetTime();
             double delta = now - lastTime;
-            if (delta > tickInterval) {
+            if (delta > cur_tick_interval) {
                 do_movement();
                 lastTime = now;
             }
@@ -102,6 +109,53 @@ int main() {
     return 0;
 }
 
+void init_inputs(GLFWwindow *window) {
+    glfwSetKeyCallback(window, key_callback);
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    switch (key) {
+        case GLFW_KEY_W:
+        case GLFW_KEY_UP:
+        case GLFW_KEY_S:
+        case GLFW_KEY_DOWN:
+        case GLFW_KEY_A:
+        case GLFW_KEY_LEFT:
+        case GLFW_KEY_D:
+        case GLFW_KEY_RIGHT:
+            if (action == GLFW_PRESS) {
+                cur_tick_interval = base_tick_interval + key_press_speed_increase;
+            } else if (action == GLFW_REPEAT){
+                cur_tick_interval = base_tick_interval + key_press_speed_increase * 4;
+            } else if (action == GLFW_RELEASE){
+                cur_tick_interval = base_tick_interval;
+            }
+            switch (key) {
+                case GLFW_KEY_W:
+                case GLFW_KEY_UP:
+                    current_movement = MoveUp;
+                    break;
+                case GLFW_KEY_S:
+                case GLFW_KEY_DOWN:
+                    current_movement = MoveDown;
+                    break;
+                case GLFW_KEY_A:
+                case GLFW_KEY_LEFT:
+                    current_movement = MoveLeft;
+                    break;
+                case GLFW_KEY_D:
+                case GLFW_KEY_RIGHT:
+                default: // Otherwise complaints about no default case or unreachable code.
+                    current_movement = MoveRight;
+                    break;
+            }
+            break;
+        default:
+            // Ignore;
+            break;
+    }
+
+}
 
 void init_colors() {
     rgba_to_color(53, 208, 173, 1, blue_green);
@@ -146,7 +200,23 @@ void do_movement() {
             int x;
             int y;
             n_to_xy(i, &x, &y);
-            x++;
+            switch (current_movement) {
+                case MoveLeft:
+                    x--;
+                    break;
+                case MoveRight:
+                    x++;
+                    break;
+                case MoveDown:
+                    y++;
+                    break;
+                case MoveUp:
+                    y--;
+                    break;
+                default:
+                    std::cout << "Movement problem detected. \n";
+                    break;
+            }
             if (x >= num_columns) {
                 x = 0;
                 y++;
