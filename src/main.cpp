@@ -109,9 +109,11 @@ int main() {
     return 0;
 }
 
+
 void init_inputs(GLFWwindow *window) {
     glfwSetKeyCallback(window, key_callback);
 }
+
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     switch (key) {
@@ -156,6 +158,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 
 }
+
 
 void init_colors() {
     rgba_to_color(53, 208, 173, 1, blue_green);
