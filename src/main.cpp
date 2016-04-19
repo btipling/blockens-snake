@@ -14,7 +14,11 @@ GLfloat black[4];
 
 GLfloat line_color[4];
 GLfloat bg_color[4];
-const GLint max_positions = 2500;
+GLfloat block_color[4];
+GLfloat grow_block_color[4];
+GLfloat speed_block_color[4];
+
+const GLint max_positions = 25 * 25;
 GLint position_values[max_positions];
 
 bool win_focused = true;
@@ -99,6 +103,9 @@ void init_colors() {
 
     set_color(bg_color, white);
     set_color(line_color, blue_green);
+    set_color(block_color, light_brown);
+    set_color(grow_block_color, dark_brown);
+    set_color(speed_block_color, yellow_green);
 }
 
 void init_positions() {
@@ -181,13 +188,11 @@ void setup_uniform(GLuint rendering_program, GLint num_columns, GLint num_rows) 
     GLuint uboIndex;
     GLint uboSize;
     GLuint ubo;
-    enum { NumColumns, NumRows, GridColor, PositionValues, NumUniforms };
+    enum { GridColor, PositionValues, NumUniforms };
 
     const char *names[NumUniforms] = {
-            "num_columns",
-            "num_rows",
-            "grid_colors",
-            "position_values",
+        "grid_colors",
+        "position_values",
     };
 
     GLuint indexes[NumUniforms];
@@ -208,6 +213,9 @@ void setup_uniform(GLuint rendering_program, GLint num_columns, GLint num_rows) 
 
     GLfloat grid_colors[4][4];
     set_color(grid_colors[0], line_color);
+    set_color(grid_colors[1], block_color);
+    set_color(grid_colors[2], grow_block_color);
+    set_color(grid_colors[3], speed_block_color);
 
     void *buffer;
 
@@ -216,10 +224,6 @@ void setup_uniform(GLuint rendering_program, GLint num_columns, GLint num_rows) 
         std::cout << "Unable to allocate unform buffer.\n";
         exit(EXIT_FAILURE);
     }
-
-
-    *(GLint *)ADDRESS(buffer, offset[NumColumns]) = num_columns;
-    *(GLint *)ADDRESS(buffer, offset[NumRows]) = num_rows;
 
     GLint color_offset = offset[GridColor];
     for (int colors_i = 0; colors_i < 4; colors_i++) {
@@ -244,7 +248,6 @@ void setup_uniform(GLuint rendering_program, GLint num_columns, GLint num_rows) 
     glBufferData(GL_UNIFORM_BUFFER, uboSize, buffer, GL_STATIC_DRAW);
 }
 
-
 void render_app(GLuint rendering_program, GLFWwindow *window) {
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0, 1, 0, 1);
@@ -254,16 +257,16 @@ void render_app(GLuint rendering_program, GLFWwindow *window) {
     const GLuint numVertices = 8;
     GLint num_columns = 25;
     GLint num_rows = 25;
-    setup_grid_vertices();
     setup_uniform(rendering_program, num_columns, num_rows);
-
     glUseProgram(rendering_program);
-    glUniform1i(is_block_index, GL_FALSE);
-    glDrawArraysInstanced(GL_LINES, 0, numVertices, num_columns * num_rows);
 
     glUniform1i(is_block_index, GL_TRUE);
     setup_block_vertices();
     glDrawArraysInstanced(GL_TRIANGLES, 0, numVertices, num_columns * num_rows);
+
+    glUniform1i(is_block_index, GL_FALSE);
+    setup_grid_vertices();
+    glDrawArraysInstanced(GL_LINES, 0, numVertices, num_columns * num_rows);
 
     glfwSwapBuffers(window);
 }

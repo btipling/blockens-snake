@@ -4,12 +4,11 @@ layout (location = 0) in vec4 v_position;
 uniform bool is_block_vertex;
 
 uniform GridData {
-    int num_columns;
-    int num_rows;
     vec4 grid_colors[4];
-    int position_values[2500]; // Max 50x50 grid.
+    int position_values[25 * 25]; // Max 50x50 grid.
 };
-
+int num_columns = 25;
+int num_rows = 25;
 flat out vec4 vert_color;
 flat out int do_discard;
 
@@ -18,7 +17,7 @@ void main(void) {
     do_discard = 0;
     if (is_block_vertex) {
         if (position_values[gl_InstanceID] > 0) {
-            vert_color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+            vert_color = grid_colors[1];
         } else {
             do_discard = 1;
         }
