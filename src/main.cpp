@@ -112,6 +112,7 @@ void init_positions() {
     for (int i = 0; i < max_positions; i++) {
         position_values[i] = -1;
     }
+    position_values[0] = 1;
 }
 
 
@@ -234,8 +235,6 @@ void setup_uniform(GLuint rendering_program, GLint num_columns, GLint num_rows) 
         color_offset += strides[GridColor];
     }
 
-    position_values[1] = 1;
-    position_values[10] = 1;
     GLint pos_offset = offset[PositionValues];
     for (int pos_i = 0; pos_i < max_positions; pos_i++) {
         *(GLint *)ADDRESS(buffer, pos_offset) = position_values[pos_i];
