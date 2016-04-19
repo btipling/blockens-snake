@@ -14,9 +14,30 @@ GLfloat black[4];
 
 GLfloat line_color[4];
 GLfloat bg_color[4];
+const GLint max_positions = 2500;
+GLint position_values[max_positions];
 
 bool win_focused = true;
 
+/*
+ * The grid is made up of values 0 to n that starts at top left goes num_columns across and n @ num_columns + 1
+ * starts next row. Determining n's column is n % num_columns and n's row is n / num_rows. Going from x,y (column,
+ * row) to n would be y * num_columns + x = n;
+ *
+ * Remaining shader logic:
+ *
+ * If is_block_vertex == true, vertex shader checks position_values. If the balue for gl_InstanceID is -1 we
+ * discard the vertex. The frag shader will use this too, but to query color. If false frag shader picks
+ * grid line color at 0.
+ *
+ * inside position_values are values -1 to sizeof(grid_colors)
+ *
+ *   i index of what color to use from grid_color.
+ *
+ * A block is made up of two triangles facing each other to form a square.
+ * Non blocks are lines that draw a square, a better grid would just to have lines that draw across the
+ * entire drawing area horizontally and vertically.
+ */
 
 int main() {
     GLFWwindow* window;
@@ -51,6 +72,7 @@ int main() {
     GLuint rendering_program;
 
     init_colors();
+    init_positions();
     rendering_program = compile_shaders();
 
     while (!glfwWindowShouldClose(window)) {
@@ -79,6 +101,12 @@ void init_colors() {
     set_color(line_color, blue_green);
 }
 
+void init_positions() {
+    for (int i = 0; i < max_positions; i++) {
+        position_values[i] = -1;
+    }
+}
+
 
 void window_focus_callback(GLFWwindow* window, int focused) {
     if (focused) {
@@ -94,24 +122,24 @@ void set_color(GLfloat to_color[4], GLfloat fro_color[4]) {
 }
 
 
-void setup_vertices() {
+void setup_grid_vertices() {
     GLuint vertex_array_object[1];
     GLuint buffers[1];
     const int n = 8;
     enum Attrib_IDS { vPosition = 0 };
     GLfloat vertices[n][4] = {
 
-            { -1.0f, 1.0f, 0.50f, 1.0f },
-            { 1.0f, 1.0f, 0.50f, 1.0f },
+            { -1.0f, 1.0f, 1.0f, 1.0f },
+            { 1.0f, 1.0f, 1.0f, 1.0f },
 
-            { -1.0f, -1.0f, 0.50f, 1.0f },
-            { 1.0f, -1.0f, 0.50f, 1.0f },
+            { -1.0f, -1.0f, 1.0f, 1.0f },
+            { 1.0f, -1.0f, 1.0f, 1.0f },
 
-            { 1.0f, 1.0f, 0.50f, 1.0f },
-            { 1.0f, -1.0f, 0.50f, 1.0f },
+            { 1.0f, 1.0f, 1.0f, 1.0f },
+            { 1.0f, -1.0f, 1.0f, 1.0f },
 
-            { -1.0f, 1.0f, 0.50f, 1.0f },
-            { -1.0f, -1.0f, 0.50f, 1.0f },
+            { -1.0f, 1.0f, 1.0f, 1.0f },
+            { -1.0f, -1.0f, 1.0f, 1.0f },
     };
 
     glGenVertexArrays(1, vertex_array_object);
@@ -124,23 +152,49 @@ void setup_vertices() {
 }
 
 
+void setup_block_vertices() {
+    GLuint vertex_array_object[1];
+    GLuint buffers[1];
+    const int n = 6;
+    enum Attrib_IDS { vPosition = 0 };
+    GLfloat vertices[n][4] = {
+            { -1.0f, -1.0f, 1.0f, 1.0f },
+            { -1.0f, 1.0f, 1.0f, 1.0f },
+            { 1.0f, 1.0f, 1.0f, 1.0f },
+
+            { -1.0f, -1.0f, 1.0f, 1.0f },
+            { 1.0f, -1.0f, 1.0f, 1.0f },
+            { 1.0f, 1.0f, 1.0f, 1.0f },
+    };
+
+    glGenVertexArrays(1, vertex_array_object);
+    glBindVertexArray(vertex_array_object[0]);
+    glGenBuffers(1, buffers);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+    glEnableVertexAttribArray(vPosition);
+}
+
 void setup_uniform(GLuint rendering_program, GLint num_columns, GLint num_rows) {
 
     GLuint uboIndex;
     GLint uboSize;
     GLuint ubo;
-    enum { NumColumns, NumRows, GridColor, NumUniforms };
+    enum { NumColumns, NumRows, GridColor, PositionValues, NumUniforms };
 
     const char *names[NumUniforms] = {
             "num_columns",
             "num_rows",
             "grid_colors",
+            "position_values",
     };
 
     GLuint indexes[NumUniforms];
     GLint size[NumUniforms];
     GLint offset[NumUniforms];
     GLint type[NumUniforms];
+    GLint strides[NumUniforms];
 
     uboIndex = glGetUniformBlockIndex(rendering_program, "GridData");
     glGetActiveUniformBlockiv(rendering_program, uboIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &uboSize);
@@ -150,6 +204,7 @@ void setup_uniform(GLuint rendering_program, GLint num_columns, GLint num_rows) 
     glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_OFFSET, offset);
     glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_SIZE, size);
     glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_TYPE, type);
+    glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_ARRAY_STRIDE, strides);
 
     GLfloat grid_colors[4][4];
     set_color(grid_colors[0], line_color);
@@ -162,30 +217,26 @@ void setup_uniform(GLuint rendering_program, GLint num_columns, GLint num_rows) 
         exit(EXIT_FAILURE);
     }
 
-    /*
-     * The grid is made up of values 0 to n that starts at top left goes num_columns across and n @ num_columns + 1
-     * starts next row. Determining n's column is n % num_columns and n's row is n / num_rows. Going from x,y (column,
-     * row) to n would be y * num_columns + x = n;
-     *
-     * Remaining shader logic:
-     *
-     * If is_block_vertex == true, vertex shader uses gl_InstanceID to query position_values for a new mapped
-     * gl_InstanceID'like variable to use instead of gl_InstanceID. The frag shader will use this too, but to query
-     * color. If false frag shader picks grid line color at 0.
-     *
-     * inside: position_values are 2 values per instance:
-     *
-     *   1st value: n position where block goes.
-     *   2nd value: i index of what color to use from grid_color.
-     *
-     * A block is made up of two triangles facing each other to form a square.
-     * Non blocks are lines that draw a square, a better grid would just to have lines that draw across the
-     * entire drawing area horizontally and vertically.
-     */
 
-    memcpy(ADDRESS(buffer, offset[NumColumns]), &num_columns, sizeof(GLint));
-    memcpy(ADDRESS(buffer, offset[NumRows]), &num_rows, sizeof(GLint));
-    memcpy(ADDRESS(buffer, offset[GridColor]), &grid_colors, sizeof(GLfloat) * 4 * 4);
+    *(GLint *)ADDRESS(buffer, offset[NumColumns]) = num_columns;
+    *(GLint *)ADDRESS(buffer, offset[NumRows]) = num_rows;
+
+    GLint color_offset = offset[GridColor];
+    for (int colors_i = 0; colors_i < 4; colors_i++) {
+        ((float *)ADDRESS(buffer, color_offset))[0] = grid_colors[colors_i][0];
+        ((float *)ADDRESS(buffer, color_offset))[1] = grid_colors[colors_i][1];
+        ((float *)ADDRESS(buffer, color_offset))[2] = grid_colors[colors_i][2];
+        ((float *)ADDRESS(buffer, color_offset))[3] = grid_colors[colors_i][3];
+        color_offset += strides[GridColor];
+    }
+
+    position_values[1] = 1;
+    position_values[10] = 1;
+    GLint pos_offset = offset[PositionValues];
+    for (int pos_i = 0; pos_i < max_positions; pos_i++) {
+        *(GLint *)ADDRESS(buffer, pos_offset) = position_values[pos_i];
+        pos_offset += strides[PositionValues];
+    }
 
     glGenBuffers(1, &ubo);
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
@@ -199,14 +250,20 @@ void render_app(GLuint rendering_program, GLFWwindow *window) {
     glClearColor(0, 1, 0, 1);
     glClearBufferfv(GL_COLOR, 0, bg_color);
 
+    GLint is_block_index = glGetUniformLocation(rendering_program, "is_block_vertex");
     const GLuint numVertices = 8;
     GLint num_columns = 25;
     GLint num_rows = 25;
-    setup_vertices();
+    setup_grid_vertices();
     setup_uniform(rendering_program, num_columns, num_rows);
 
     glUseProgram(rendering_program);
+    glUniform1i(is_block_index, GL_FALSE);
     glDrawArraysInstanced(GL_LINES, 0, numVertices, num_columns * num_rows);
+
+    glUniform1i(is_block_index, GL_TRUE);
+    setup_block_vertices();
+    glDrawArraysInstanced(GL_TRIANGLES, 0, numVertices, num_columns * num_rows);
 
     glfwSwapBuffers(window);
 }
@@ -238,6 +295,7 @@ GLuint compile_shaders(void) {
         char* log = new char[log_size];
         glGetShaderInfoLog(vertex_shader, log_size, NULL, log);
         std::cout << "Vertex shader error log: \n" << log << " \n";
+        exit(EXIT_FAILURE);
     } else {
         std::cout << "Vertex shader did compile homes. " << log_size << " \n";
     }
@@ -254,6 +312,7 @@ GLuint compile_shaders(void) {
         char* log = new char[log_size];
         glGetShaderInfoLog(fragment_shader, log_size, NULL, log);
         std::cout << "Frag shader error log: \n" << log << " \n";
+        exit(EXIT_FAILURE);
     } else {
         std::cout << "Frag shader did compile homes. " << log_size << " \n";
     }

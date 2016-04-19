@@ -1,16 +1,12 @@
 #version 410 core
-flat in int instance_id;
-
-uniform GridData {
-    int num_columns;
-    int num_rows;
-    vec4 grid_colors[4];
-    bool is_block_vertex;
-    vec2 position_values[2500];  // Max 50x50 grid.
-};
-
+flat in vec4 vert_color;
 out vec4 color;
+flat in int do_discard;
+
 
 void main(void) {
-    color = grid_colors[0];
+    if (do_discard == 1) {
+        discard;
+    }
+    color = vert_color;
 }
