@@ -46,6 +46,7 @@ double tickInterval = 0.005; // In seconds
  * entire drawing area horizontally and vertically.
  */
 
+
 int main() {
     GLFWwindow* window;
 
@@ -118,6 +119,7 @@ void init_colors() {
     set_color(speed_block_color, yellow_green);
 }
 
+
 void init_positions() {
     for (int i = 0; i < max_positions; i++) {
         position_values[i] = -1;
@@ -125,14 +127,17 @@ void init_positions() {
     position_values[xy_to_n(12, 5)] = 1;
 }
 
+
 void n_to_xy(int n, int *x, int *y) {
     *x = n % num_columns;
     *y = n / num_rows;
 }
 
+
 int xy_to_n(int x, int y) {
     return y * num_columns + x;
 }
+
 
 void do_movement() {
     int move_n = -1;
@@ -232,6 +237,7 @@ void setup_block_vertices() {
     glEnableVertexAttribArray(vPosition);
 }
 
+
 void setup_uniform(GLuint rendering_program) {
 
     GLuint uboIndex;
@@ -294,6 +300,7 @@ void setup_uniform(GLuint rendering_program) {
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
     glBufferData(GL_UNIFORM_BUFFER, uboSize, buffer, GL_STATIC_DRAW);
 }
+
 
 void render_app(GLuint rendering_program, GLFWwindow *window) {
     glClear(GL_COLOR_BUFFER_BIT);
