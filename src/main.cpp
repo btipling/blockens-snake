@@ -284,9 +284,9 @@ void do_movement() {
         if (position_values[move_n][BlockType] == GrowBlock) {
             currentCountDown++;
         } else {
-            current_movement += speed_increase;
+            cur_tick_interval += speed_increase;
         }
-        if (current_movement > max_speed && rand() % 4 == 3)  {
+        if (cur_tick_interval > max_speed && rand() % 4 == 3)  {
             position_values[rand_n()][BlockType] = SpeedBlock;
         } else {
             position_values[rand_n()][BlockType] = GrowBlock;
