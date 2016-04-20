@@ -1,10 +1,4 @@
 #include <blocken.h>
-#include <fstream>
-#include <sstream>
-#include <unistd.h>
-#include <sys/param.h>
-#include <stdlib.h>
-#include <time.h>
 
 // Declare colors.
 
@@ -103,6 +97,7 @@ int main() {
     }
 
     glfwDefaultWindowHints();
+    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -118,7 +113,7 @@ int main() {
     glfwMakeContextCurrent(window);
 
     glfwSetWindowFocusCallback(window, window_focus_callback);
-
+    glfwSetWindowSizeCallback(window, window_resize_callback);
     std::cout << "GL Version: " << glGetString(GL_VERSION) << "\n";
     std::cout << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << "\n";
     std::cout << "Vendor: " << glGetString(GL_VENDOR) << std::endl;
@@ -385,6 +380,13 @@ void window_focus_callback(GLFWwindow* window, int focused) {
         win_focused = false;
     }
 }
+
+
+void window_resize_callback (GLFWwindow *window, int width, int height) {
+    int max_dim = width > height ? width : height;
+    glfwSetWindowSize(window, max_dim, max_dim);
+}
+
 
 
 void set_color(GLfloat to_color[4], GLfloat fro_color[4]) {
