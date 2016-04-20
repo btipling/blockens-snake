@@ -31,6 +31,7 @@ enum { CountDown, BlockType };
 enum { NoBlock, BlockenBlock, GrowBlock, SpeedBlock, NumBlocks };
 
 bool win_focused = true;
+bool game_on = true;
 
 enum { MoveLeft, MoveRight, MoveUp, MoveDown };
 enum { R, G, B, A };
@@ -104,7 +105,7 @@ int main() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     while (!glfwWindowShouldClose(window)) {
-        if (win_focused) {
+        if (win_focused && game_on) {
             double now = glfwGetTime();
             double delta = now - lastTime;
             if (delta > cur_tick_interval) {
@@ -254,6 +255,10 @@ void do_movement() {
                 position_values[i][BlockType] = NoBlock;
             }
         }
+    }
+    if (position_values[move_n][BlockType] == BlockenBlock) {
+        game_on = false;
+        return;
     }
     position_values[move_n][BlockType] = BlockenBlock;
     position_values[move_n][CountDown] = currentCountDown;
