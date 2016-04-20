@@ -3,6 +3,8 @@
 #include <sstream>
 #include <unistd.h>
 #include <sys/param.h>
+#include <stdlib.h>
+#include <time.h>
 
 // Declare colors.
 
@@ -271,6 +273,7 @@ void init_positions() {
     for (int i = 0; i < max_positions; i++) {
         position_values[i][BlockType] = NoBlock;
     }
+    srand(time(NULL));
     int n = rand_n();
     position_values[n][CountDown] = currentCountDown;
     position_values[n][BlockType] = BlockenBlock;
