@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <sys/param.h>
 
+// Declare colors.
+
 GLfloat blue_green[4];
 GLfloat yellow_green[4];
 GLfloat light_brown[4];
@@ -18,6 +20,32 @@ GLfloat bg_color[4];
 GLfloat blocken_block_color[4];
 GLfloat grow_block_color[4];
 GLfloat speed_block_color[4];
+
+// Declare buffers.
+
+GLuint vao[2];
+GLuint buffers[2];
+GLuint ubo;
+void *ubo_buffer;
+
+
+GLuint uboIndex;
+GLint uboSize;
+enum { NumBlockenBlocks, GridColor, PositionValues, NumUniforms };
+
+const char *names[NumUniforms] = {
+        "num_blocken_blocks",
+        "grid_colors",
+        "position_values",
+};
+
+GLuint ubo_indexes[NumUniforms];
+GLint ubo_sizes[NumUniforms];
+GLint ubo_offset[NumUniforms];
+GLint ubo_types[NumUniforms];
+GLint ubo_strides[NumUniforms];
+
+// Declare game variables.
 
 const GLint num_columns = 25;
 const GLint num_rows = 25;
@@ -99,7 +127,11 @@ int main() {
     init_inputs(window);
     init_colors();
     init_positions();
+
     rendering_program = compile_shaders();
+
+    init_buffers(rendering_program);
+
     double lastTime = glfwGetTime();
 
     glEnable(GL_BLEND);
@@ -121,6 +153,35 @@ int main() {
     glfwTerminate();
     glDeleteProgram(rendering_program);
     return 0;
+}
+
+
+void init_buffers(GLuint rendering_program) {
+    glGenVertexArrays(2, vao);
+    glGenBuffers(2, buffers);
+    glGenBuffers(1, &ubo);
+
+    uboIndex = glGetUniformBlockIndex(rendering_program, "GridData");
+    glGetActiveUniformBlockiv(rendering_program, uboIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &uboSize);
+    glUniformBlockBinding(rendering_program, uboIndex, 0);
+
+    glGetUniformIndices(rendering_program, NumUniforms, names, ubo_indexes);
+    glGetActiveUniformsiv(rendering_program, NumUniforms, ubo_indexes, GL_UNIFORM_OFFSET, ubo_offset);
+    glGetActiveUniformsiv(rendering_program, NumUniforms, ubo_indexes, GL_UNIFORM_SIZE, ubo_sizes);
+    glGetActiveUniformsiv(rendering_program, NumUniforms, ubo_indexes, GL_UNIFORM_TYPE, ubo_types);
+    glGetActiveUniformsiv(rendering_program, NumUniforms, ubo_indexes, GL_UNIFORM_ARRAY_STRIDE, ubo_strides);
+
+    set_color(grid_colors[NoBlock], line_color);
+    set_color(grid_colors[BlockenBlock], blocken_block_color);
+    set_color(grid_colors[GrowBlock], grow_block_color);
+    set_color(grid_colors[SpeedBlock], speed_block_color);
+
+    ubo_buffer = malloc(static_cast<size_t>(uboSize));
+    if (ubo_buffer == NULL) {
+        std::cout << "Unable to allocate uniform ubo_buffer.\n";
+        exit(EXIT_FAILURE);
+    }
+
 }
 
 
@@ -328,8 +389,6 @@ void set_color(GLfloat to_color[4], GLfloat fro_color[4]) {
 
 
 void setup_grid_vertices() {
-    GLuint vertex_array_object[1];
-    GLuint buffers[1];
     const int n = 8;
     enum Attrib_IDS { vPosition = 0 };
     GLfloat vertices[n][4] = {
@@ -347,9 +406,7 @@ void setup_grid_vertices() {
             { -1.0f, -1.0f, 1.0f, 1.0f },
     };
 
-    glGenVertexArrays(1, vertex_array_object);
-    glBindVertexArray(vertex_array_object[0]);
-    glGenBuffers(1, buffers);
+    glBindVertexArray(vao[0]);
     glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
@@ -358,8 +415,6 @@ void setup_grid_vertices() {
 
 
 void setup_block_vertices() {
-    GLuint vertex_array_object[1];
-    GLuint buffers[1];
     const int n = 6;
     enum Attrib_IDS { vPosition = 0 };
     GLfloat vertices[n][4] = {
@@ -372,81 +427,37 @@ void setup_block_vertices() {
             { 1.0f, 1.0f, 1.0f, 1.0f },
     };
 
-    glGenVertexArrays(1, vertex_array_object);
-    glBindVertexArray(vertex_array_object[0]);
-    glGenBuffers(1, buffers);
-    glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
+    glBindVertexArray(vao[1]);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers[1]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
     glEnableVertexAttribArray(vPosition);
 }
 
 
-void setup_uniform(GLuint rendering_program) {
+void setup_uniform() {
 
-    GLuint uboIndex;
-    GLint uboSize;
-    GLuint ubo;
-    enum { NumBlockenBlocks, GridColor, PositionValues, NumUniforms };
+    *(int *)ADDRESS(ubo_buffer, ubo_offset[NumBlockenBlocks]) = currentCountDown;
 
-    const char *names[NumUniforms] = {
-        "num_blocken_blocks",
-        "grid_colors",
-        "position_values",
-    };
-
-    GLuint indexes[NumUniforms];
-    GLint size[NumUniforms];
-    GLint offset[NumUniforms];
-    GLint type[NumUniforms];
-    GLint strides[NumUniforms];
-
-    uboIndex = glGetUniformBlockIndex(rendering_program, "GridData");
-    glGetActiveUniformBlockiv(rendering_program, uboIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &uboSize);
-    glUniformBlockBinding(rendering_program, uboIndex, 0);
-
-    glGetUniformIndices(rendering_program, NumUniforms, names, indexes);
-    glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_OFFSET, offset);
-    glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_SIZE, size);
-    glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_TYPE, type);
-    glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_ARRAY_STRIDE, strides);
-
-    set_color(grid_colors[NoBlock], line_color);
-    set_color(grid_colors[BlockenBlock], blocken_block_color);
-    set_color(grid_colors[GrowBlock], grow_block_color);
-    set_color(grid_colors[SpeedBlock], speed_block_color);
-
-    void *buffer;
-
-    buffer = malloc(static_cast<size_t>(uboSize));
-    if (buffer == NULL) {
-        std::cout << "Unable to allocate unform buffer.\n";
-        exit(EXIT_FAILURE);
-    }
-
-
-    *(int *)ADDRESS(buffer, offset[NumBlockenBlocks]) = currentCountDown;
-
-    GLint color_offset = offset[GridColor];
+    GLint color_offset = ubo_offset[GridColor];
     for (int colors_i = 0; colors_i < 4; colors_i++) {
-        ((float *)ADDRESS(buffer, color_offset))[R] = grid_colors[colors_i][R];
-        ((float *)ADDRESS(buffer, color_offset))[G] = grid_colors[colors_i][G];
-        ((float *)ADDRESS(buffer, color_offset))[B] = grid_colors[colors_i][B];
-        ((float *)ADDRESS(buffer, color_offset))[A] = grid_colors[colors_i][A];
-        color_offset += strides[GridColor];
+        ((float *)ADDRESS(ubo_buffer, color_offset))[R] = grid_colors[colors_i][R];
+        ((float *)ADDRESS(ubo_buffer, color_offset))[G] = grid_colors[colors_i][G];
+        ((float *)ADDRESS(ubo_buffer, color_offset))[B] = grid_colors[colors_i][B];
+        ((float *)ADDRESS(ubo_buffer, color_offset))[A] = grid_colors[colors_i][A];
+        color_offset += ubo_strides[GridColor];
     }
 
-    GLint pos_offset = offset[PositionValues];
+    GLint pos_offset = ubo_offset[PositionValues];
     for (int pos_i = 0; pos_i < max_positions; pos_i++) {
-        ((GLint *)ADDRESS(buffer, pos_offset))[CountDown] = position_values[pos_i][CountDown];
-        ((GLint *)ADDRESS(buffer, pos_offset))[BlockType] = position_values[pos_i][BlockType];
-        pos_offset += strides[PositionValues];
+        ((GLint *)ADDRESS(ubo_buffer, pos_offset))[CountDown] = position_values[pos_i][CountDown];
+        ((GLint *)ADDRESS(ubo_buffer, pos_offset))[BlockType] = position_values[pos_i][BlockType];
+        pos_offset += ubo_strides[PositionValues];
     }
 
-    glGenBuffers(1, &ubo);
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-    glBufferData(GL_UNIFORM_BUFFER, uboSize, buffer, GL_STATIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, uboSize, ubo_buffer, GL_STATIC_DRAW);
 }
 
 
@@ -457,7 +468,7 @@ void render_app(GLuint rendering_program, GLFWwindow *window) {
 
     GLint is_block_index = glGetUniformLocation(rendering_program, "is_block_vertex");
     const GLuint numVertices = 8;
-    setup_uniform(rendering_program);
+    setup_uniform();
     glUseProgram(rendering_program);
 
     glUniform1i(is_block_index, GL_TRUE);

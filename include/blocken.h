@@ -10,7 +10,7 @@ std::string get_shader(std::string path);
 GLuint compile_shaders();
 void rgba_to_color(int, int, int, int, GLfloat[4]);
 void render_app(GLuint, GLFWwindow*);
-void setup_uniform(GLuint);
+void setup_uniform();
 void setup_grid_vertices();
 void setup_block_vertices();
 void init_colors();
@@ -24,4 +24,5 @@ void n_to_xy(int, int*, int*);
 int xy_to_n(int, int);
 int rand_n();
 void out(const char *msg);
+void init_buffers(GLuint);
 
