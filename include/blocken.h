@@ -22,4 +22,6 @@ void set_color(GLfloat[4], GLfloat[4]);
 void window_focus_callback(GLFWwindow*, int);
 void n_to_xy(int, int*, int*);
 int xy_to_n(int, int);
+int rand_n();
+void out(const char *msg);
 

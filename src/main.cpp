@@ -24,11 +24,11 @@ const GLint num_rows = 25;
 const GLint max_positions = num_columns * num_rows;
 GLint position_values[max_positions][2];
 
-const int startCountDown = 10;
+const int startCountDown = 1;
 int currentCountDown = startCountDown;
 
 enum { CountDown, BlockType };
-enum { NoBlock, BlockenBlock, GrowBlock, SpeedBlock, NumBlocks };
+enum { NoBlock, BlockenBlock, GrowBlock, SpeedBlock };
 
 bool win_focused = true;
 bool game_on = true;
@@ -39,7 +39,8 @@ int current_movement = MoveLeft;
 
 // In seconds.
 double base_tick_interval = 0.25;
-double key_press_speed_increase = -0.125;
+double speed_increase = -0.025;
+double max_speed = 0.125;
 double cur_tick_interval = base_tick_interval;
 /*
  * The grid is made up of values 0 to n that starts at top left goes num_columns across and n @ num_columns + 1
@@ -67,7 +68,7 @@ int main() {
     GLFWwindow* window;
 
     if (!glfwInit()) {
-        std::cout << "Failed to init glfw.\n";
+        out("Failed to init glfw.");
         exit(EXIT_FAILURE);
     }
 
@@ -146,19 +147,36 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             switch (key) {
                 case GLFW_KEY_W:
                 case GLFW_KEY_UP:
+                    // For each movement we check that if we're longer than 1 we can't move in opposite direction.
+                    if (currentCountDown > 1 && current_movement == MoveDown) {
+                        out("Can't move up when going down!");
+                        return;
+                    }
                     current_movement = MoveUp;
                     break;
                 case GLFW_KEY_S:
                 case GLFW_KEY_DOWN:
+                    if (currentCountDown > 1 && current_movement == MoveUp) {
+                        out("Can't move down when going up!");
+                        return;
+                    }
                     current_movement = MoveDown;
                     break;
                 case GLFW_KEY_A:
                 case GLFW_KEY_LEFT:
+                    if (currentCountDown > 1 && current_movement == MoveRight) {
+                        out("Can't move left when going right!");
+                        return;
+                    }
                     current_movement = MoveLeft;
                     break;
                 case GLFW_KEY_D:
                 case GLFW_KEY_RIGHT:
                 default: // Otherwise complaints about no default case or unreachable code.
+                    if (currentCountDown > 1 && current_movement == MoveLeft) {
+                        out("Can't move right when going left!");
+                        return;
+                    }
                     current_movement = MoveRight;
                     break;
             }
@@ -192,9 +210,11 @@ void init_positions() {
     for (int i = 0; i < max_positions; i++) {
         position_values[i][BlockType] = NoBlock;
     }
-    int n = xy_to_n(12, 5);
+    int n = rand_n();
     position_values[n][CountDown] = currentCountDown;
     position_values[n][BlockType] = BlockenBlock;
+    n = rand_n();
+    position_values[n][BlockType] = GrowBlock;
 }
 
 
@@ -230,7 +250,7 @@ void do_movement() {
                     y--;
                     break;
                 default:
-                    std::cout << "Movement problem detected. \n";
+                    out("Movement problem detected.");
                     break;
             }
             if (x >= num_columns) {
@@ -257,11 +277,39 @@ void do_movement() {
         }
     }
     if (position_values[move_n][BlockType] == BlockenBlock) {
+        out("Game over, you hit a blocken block");
         game_on = false;
         return;
+    } else if (position_values[move_n][BlockType] == GrowBlock || position_values[move_n][BlockType] == SpeedBlock) {
+        if (position_values[move_n][BlockType] == GrowBlock) {
+            currentCountDown++;
+        } else {
+            current_movement += speed_increase;
+        }
+        if (current_movement > max_speed && rand() % 4 == 3)  {
+            position_values[rand_n()][BlockType] = SpeedBlock;
+        } else {
+            position_values[rand_n()][BlockType] = GrowBlock;
+        }
     }
     position_values[move_n][BlockType] = BlockenBlock;
     position_values[move_n][CountDown] = currentCountDown;
+}
+
+
+int rand_n() {
+    int n;
+    int max_tries = max_positions * max_positions;
+    int tries = 0;
+    do {
+        n = rand() % max_positions - 1;
+        tries++;
+    } while (position_values[n][BlockType] != NoBlock && tries < max_tries);
+    if (tries == max_tries) {
+        out("Game over, we couldn't find a place to put a grow or speed block");
+        game_on = false;
+    }
+    return n;
 }
 
 
@@ -339,9 +387,10 @@ void setup_uniform(GLuint rendering_program) {
     GLuint uboIndex;
     GLint uboSize;
     GLuint ubo;
-    enum { GridColor, PositionValues, NumUniforms };
+    enum { NumBlockenBlocks, GridColor, PositionValues, NumUniforms };
 
     const char *names[NumUniforms] = {
+        "num_blocken_blocks",
         "grid_colors",
         "position_values",
     };
@@ -362,10 +411,10 @@ void setup_uniform(GLuint rendering_program) {
     glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_TYPE, type);
     glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_ARRAY_STRIDE, strides);
 
-    set_color(grid_colors[0], line_color);
-    set_color(grid_colors[1], blocken_block_color);
-    set_color(grid_colors[2], grow_block_color);
-    set_color(grid_colors[3], speed_block_color);
+    set_color(grid_colors[NoBlock], line_color);
+    set_color(grid_colors[BlockenBlock], blocken_block_color);
+    set_color(grid_colors[GrowBlock], grow_block_color);
+    set_color(grid_colors[SpeedBlock], speed_block_color);
 
     void *buffer;
 
@@ -374,6 +423,9 @@ void setup_uniform(GLuint rendering_program) {
         std::cout << "Unable to allocate unform buffer.\n";
         exit(EXIT_FAILURE);
     }
+
+
+    *(int *)ADDRESS(buffer, offset[NumBlockenBlocks]) = currentCountDown;
 
     GLint color_offset = offset[GridColor];
     for (int colors_i = 0; colors_i < 4; colors_i++) {
@@ -502,4 +554,8 @@ void rgba_to_color(int r, int g, int b, int a, GLfloat color[4]) {
     color[1] = g/255.0f;
     color[2] = b/255.0f;
     color[3] = a;
+}
+
+void out(const char* msg) {
+    std::cout << msg << "\n";
 }
