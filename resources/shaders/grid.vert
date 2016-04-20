@@ -14,11 +14,19 @@ flat out int do_discard;
 
 void main(void) {
     vert_color = grid_colors[0];
+    vert_color[3] = 0.125; // Faint grid lines.
     do_discard = 0;
     if (is_block_vertex) {
         if (position_values[gl_InstanceID][1] > 0) {
             int color_index = position_values[gl_InstanceID][1];
             vert_color = grid_colors[color_index];
+            if (position_values[gl_InstanceID][0] <= 5) {
+                float res = float(position_values[gl_InstanceID][0])/5.0f;
+                if (res < 0.30f) {
+                    res = 0.30f;
+                }
+                vert_color[3] = res;
+            }
         } else {
             do_discard = 1;
         }

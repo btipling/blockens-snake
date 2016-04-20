@@ -23,17 +23,22 @@ const GLint num_columns = 25;
 const GLint num_rows = 25;
 const GLint max_positions = num_columns * num_rows;
 GLint position_values[max_positions][2];
+
+const int startCountDown = 10;
+int currentCountDown = startCountDown;
+
 enum { CountDown, BlockType };
 enum { NoBlock, BlockenBlock, GrowBlock, SpeedBlock, NumBlocks };
 
 bool win_focused = true;
 
 enum { MoveLeft, MoveRight, MoveUp, MoveDown };
+enum { R, G, B, A };
 int current_movement = MoveLeft;
 
 // In seconds.
-double base_tick_interval = 0.125;
-double key_press_speed_increase = -0.12;
+double base_tick_interval = 0.25;
+double key_press_speed_increase = -0.125;
 double cur_tick_interval = base_tick_interval;
 /*
  * The grid is made up of values 0 to n that starts at top left goes num_columns across and n @ num_columns + 1
@@ -95,6 +100,9 @@ int main() {
     rendering_program = compile_shaders();
     double lastTime = glfwGetTime();
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     while (!glfwWindowShouldClose(window)) {
         if (win_focused) {
             double now = glfwGetTime();
@@ -129,10 +137,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         case GLFW_KEY_LEFT:
         case GLFW_KEY_D:
         case GLFW_KEY_RIGHT:
-            if (action == GLFW_PRESS) {
-                cur_tick_interval = base_tick_interval + key_press_speed_increase;
-            } else if (action == GLFW_REPEAT){
-                cur_tick_interval = base_tick_interval + key_press_speed_increase * 4;
+            if (action == GLFW_REPEAT) {
+                cur_tick_interval = .025;
             } else if (action == GLFW_RELEASE){
                 cur_tick_interval = base_tick_interval;
             }
@@ -185,7 +191,9 @@ void init_positions() {
     for (int i = 0; i < max_positions; i++) {
         position_values[i][BlockType] = NoBlock;
     }
-    position_values[xy_to_n(12, 5)][BlockType] = BlockenBlock;
+    int n = xy_to_n(12, 5);
+    position_values[n][CountDown] = currentCountDown;
+    position_values[n][BlockType] = BlockenBlock;
 }
 
 
@@ -203,7 +211,7 @@ int xy_to_n(int x, int y) {
 void do_movement() {
     int move_n = -1;
     for (int i = 0; i < max_positions; i++) {
-        if (position_values[i][BlockType] == BlockenBlock ) {
+        if (position_values[i][CountDown] == currentCountDown) {
             int x;
             int y;
             n_to_xy(i, &x, &y);
@@ -239,10 +247,16 @@ void do_movement() {
                 y = 0;
             }
             move_n = xy_to_n(x, y);
-            position_values[i][BlockType] = NoBlock;
+        }
+        if (position_values[i][CountDown] > 0) {
+            position_values[i][CountDown]--;
+            if (position_values[i][CountDown] == 0) {
+                position_values[i][BlockType] = NoBlock;
+            }
         }
     }
     position_values[move_n][BlockType] = BlockenBlock;
+    position_values[move_n][CountDown] = currentCountDown;
 }
 
 
@@ -358,10 +372,10 @@ void setup_uniform(GLuint rendering_program) {
 
     GLint color_offset = offset[GridColor];
     for (int colors_i = 0; colors_i < 4; colors_i++) {
-        ((float *)ADDRESS(buffer, color_offset))[NoBlock] = grid_colors[colors_i][NoBlock];
-        ((float *)ADDRESS(buffer, color_offset))[BlockenBlock] = grid_colors[colors_i][BlockenBlock];
-        ((float *)ADDRESS(buffer, color_offset))[GrowBlock] = grid_colors[colors_i][GrowBlock];
-        ((float *)ADDRESS(buffer, color_offset))[SpeedBlock] = grid_colors[colors_i][SpeedBlock];
+        ((float *)ADDRESS(buffer, color_offset))[R] = grid_colors[colors_i][R];
+        ((float *)ADDRESS(buffer, color_offset))[G] = grid_colors[colors_i][G];
+        ((float *)ADDRESS(buffer, color_offset))[B] = grid_colors[colors_i][B];
+        ((float *)ADDRESS(buffer, color_offset))[A] = grid_colors[colors_i][A];
         color_offset += strides[GridColor];
     }
 
@@ -482,5 +496,5 @@ void rgba_to_color(int r, int g, int b, int a, GLfloat color[4]) {
     color[0] = r/255.0f;
     color[1] = g/255.0f;
     color[2] = b/255.0f;
-    color[3] = a/255.0f;
+    color[3] = a;
 }
