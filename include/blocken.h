@@ -9,6 +9,7 @@
 #include <sys/param.h>
 #include <stdlib.h>
 #include <time.h>
+#include <cmath>
 
 // Helper macros.
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))

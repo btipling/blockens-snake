@@ -4,7 +4,7 @@ layout (location = 0) in vec4 v_position;
 uniform bool is_block_vertex;
 
 const int num_columns = 25;
-const int num_rows = 25;
+const int num_rows = 24;
 uniform GridData {
     int num_blocken_blocks;
     vec4 grid_colors[4];
@@ -73,10 +73,11 @@ void main(void) {
     }
 
     // Figure out where in the grid we are.
+//    const int total_rows = num_rows + 1;
     float x_offset = (gl_InstanceID % num_columns)*2 - (num_columns - 1);
-    float y_offset = (gl_InstanceID / num_rows)*2 - (num_rows - 1);
+    float y_offset = (gl_InstanceID / num_columns)*2 - (num_columns - 1);
     vec4 position = v_position + vec4(x_offset, y_offset * -1, 0.0f, 0.0f);
-    position = position / vec4(num_columns, num_rows, 1.0f, 1.0f);
+    position = position / vec4(num_columns, num_columns, 1.0f, 1.0f);
 
     gl_Position = position;
 }

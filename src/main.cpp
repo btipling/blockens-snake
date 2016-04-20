@@ -44,7 +44,7 @@ GLint ubo_strides[NumUniforms];
 // Declare game variables.
 
 const GLint num_columns = 25;
-const GLint num_rows = 25;
+const GLint num_rows = 24;
 const GLint max_positions = num_columns * num_rows;
 GLint position_values[max_positions][2];
 
@@ -68,7 +68,7 @@ double max_speed = 0.09;
 double cur_tick_interval = base_tick_interval;
 /*
  * The grid is made up of values 0 to n that starts at top left goes num_columns across and n @ num_columns + 1
- * starts next row. Determining n's column is n % num_columns and n's row is n / num_rows. Going from x,y (column,
+ * starts next row. Determining n's column is n % num_columns and n's row is n / num_columns. Going from x,y (column,
  * row) to n would be y * num_columns + x = n;
  *
  * Remaining shader logic:
@@ -279,7 +279,7 @@ void init_positions() {
 
 void n_to_xy(int n, int *x, int *y) {
     *x = n % num_columns;
-    *y = n / num_rows;
+    *y = n / num_columns;
 }
 
 
@@ -295,6 +295,7 @@ void do_movement() {
             int x;
             int y;
             n_to_xy(i, &x, &y);
+
             switch (current_movement) {
                 case MoveLeft:
                     x--;
