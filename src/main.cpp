@@ -66,9 +66,9 @@ enum { R, G, B, A };
 int current_movement = MoveLeft;
 
 // In seconds.
-double base_tick_interval = 0.25;
-double speed_increase = -0.025;
-double max_speed = 0.125;
+double base_tick_interval = 0.20;
+double speed_increase = -0.01;
+double max_speed = 0.09;
 double cur_tick_interval = base_tick_interval;
 /*
  * The grid is made up of values 0 to n that starts at top left goes num_columns across and n @ num_columns + 1
@@ -345,9 +345,9 @@ void do_movement() {
         if (position_values[move_n][BlockType] == GrowBlock) {
             currentCountDown++;
         } else {
-            cur_tick_interval += speed_increase;
+            base_tick_interval += speed_increase;
         }
-        if (cur_tick_interval > max_speed && rand() % 4 == 3)  {
+        if (base_tick_interval > max_speed && rand() % 4 == 3)  {
             position_values[rand_n()][BlockType] = SpeedBlock;
         } else {
             position_values[rand_n()][BlockType] = GrowBlock;
@@ -355,6 +355,7 @@ void do_movement() {
     }
     position_values[move_n][BlockType] = BlockenBlock;
     position_values[move_n][CountDown] = currentCountDown;
+    cur_tick_interval = base_tick_interval;
 }
 
 
