@@ -7,7 +7,7 @@ const int num_columns = 25;
 const int num_rows = 25;
 uniform GridData {
     vec4 grid_colors[4];
-    int position_values[num_columns * num_rows]; // Max 50x50 grid.
+    ivec2 position_values[num_columns * num_rows];
 };
 flat out vec4 vert_color;
 flat out int do_discard;
@@ -16,8 +16,8 @@ void main(void) {
     vert_color = grid_colors[0];
     do_discard = 0;
     if (is_block_vertex) {
-        if (position_values[gl_InstanceID] > 0) {
-            int color_index = position_values[gl_InstanceID];
+        if (position_values[gl_InstanceID][1] > 0) {
+            int color_index = position_values[gl_InstanceID][1];
             vert_color = grid_colors[color_index];
         } else {
             do_discard = 1;

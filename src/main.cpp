@@ -12,16 +12,19 @@ GLfloat brown[4];
 GLfloat white[4];
 GLfloat black[4];
 
+GLfloat grid_colors[4][4];
 GLfloat line_color[4];
 GLfloat bg_color[4];
-GLfloat block_color[4];
+GLfloat blocken_block_color[4];
 GLfloat grow_block_color[4];
 GLfloat speed_block_color[4];
 
 const GLint num_columns = 25;
 const GLint num_rows = 25;
 const GLint max_positions = num_columns * num_rows;
-GLint position_values[max_positions];
+GLint position_values[max_positions][2];
+enum { CountDown, BlockType };
+enum { NoBlock, BlockenBlock, GrowBlock, SpeedBlock, NumBlocks };
 
 bool win_focused = true;
 
@@ -39,13 +42,14 @@ double cur_tick_interval = base_tick_interval;
  *
  * Remaining shader logic:
  *
- * If is_block_vertex == true, vertex shader checks position_values. If the balue for gl_InstanceID is -1 we
+ * If is_block_vertex == true, vertex shader checks position_values. If the value at index 0 is 0 we
  * discard the vertex. The frag shader will use this too, but to query color. If false frag shader picks
  * grid line color at 0.
  *
- * inside position_values are values -1 to sizeof(grid_colors)
+ * if position_value is anivec2
  *
- *   i index of what color to use from grid_color.
+ *   at index 0 is a count down of draw iterations before the block disappears
+ *   at index 1 is the block type which corresponds to a value in grid_colors.
  *
  * A block is made up of two triangles facing each other to form a square.
  * Non blocks are lines that draw a square, a better grid would just to have lines that draw across the
@@ -171,7 +175,7 @@ void init_colors() {
 
     set_color(bg_color, white);
     set_color(line_color, blue_green);
-    set_color(block_color, light_brown);
+    set_color(blocken_block_color, light_brown);
     set_color(grow_block_color, dark_brown);
     set_color(speed_block_color, yellow_green);
 }
@@ -179,9 +183,9 @@ void init_colors() {
 
 void init_positions() {
     for (int i = 0; i < max_positions; i++) {
-        position_values[i] = -1;
+        position_values[i][BlockType] = NoBlock;
     }
-    position_values[xy_to_n(12, 5)] = 1;
+    position_values[xy_to_n(12, 5)][BlockType] = BlockenBlock;
 }
 
 
@@ -199,7 +203,7 @@ int xy_to_n(int x, int y) {
 void do_movement() {
     int move_n = -1;
     for (int i = 0; i < max_positions; i++) {
-        if (position_values[i] == 1 ) {
+        if (position_values[i][BlockType] == BlockenBlock ) {
             int x;
             int y;
             n_to_xy(i, &x, &y);
@@ -235,10 +239,10 @@ void do_movement() {
                 y = 0;
             }
             move_n = xy_to_n(x, y);
-            position_values[i] = 0;
+            position_values[i][BlockType] = NoBlock;
         }
     }
-    position_values[move_n] = 1;
+    position_values[move_n][BlockType] = BlockenBlock;
 }
 
 
@@ -339,9 +343,8 @@ void setup_uniform(GLuint rendering_program) {
     glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_TYPE, type);
     glGetActiveUniformsiv(rendering_program, NumUniforms, indexes, GL_UNIFORM_ARRAY_STRIDE, strides);
 
-    GLfloat grid_colors[4][4];
     set_color(grid_colors[0], line_color);
-    set_color(grid_colors[1], block_color);
+    set_color(grid_colors[1], blocken_block_color);
     set_color(grid_colors[2], grow_block_color);
     set_color(grid_colors[3], speed_block_color);
 
@@ -355,16 +358,17 @@ void setup_uniform(GLuint rendering_program) {
 
     GLint color_offset = offset[GridColor];
     for (int colors_i = 0; colors_i < 4; colors_i++) {
-        ((float *)ADDRESS(buffer, color_offset))[0] = grid_colors[colors_i][0];
-        ((float *)ADDRESS(buffer, color_offset))[1] = grid_colors[colors_i][1];
-        ((float *)ADDRESS(buffer, color_offset))[2] = grid_colors[colors_i][2];
-        ((float *)ADDRESS(buffer, color_offset))[3] = grid_colors[colors_i][3];
+        ((float *)ADDRESS(buffer, color_offset))[NoBlock] = grid_colors[colors_i][NoBlock];
+        ((float *)ADDRESS(buffer, color_offset))[BlockenBlock] = grid_colors[colors_i][BlockenBlock];
+        ((float *)ADDRESS(buffer, color_offset))[GrowBlock] = grid_colors[colors_i][GrowBlock];
+        ((float *)ADDRESS(buffer, color_offset))[SpeedBlock] = grid_colors[colors_i][SpeedBlock];
         color_offset += strides[GridColor];
     }
 
     GLint pos_offset = offset[PositionValues];
     for (int pos_i = 0; pos_i < max_positions; pos_i++) {
-        *(GLint *)ADDRESS(buffer, pos_offset) = position_values[pos_i];
+        ((GLint *)ADDRESS(buffer, pos_offset))[CountDown] = position_values[pos_i][CountDown];
+        ((GLint *)ADDRESS(buffer, pos_offset))[BlockType] = position_values[pos_i][BlockType];
         pos_offset += strides[PositionValues];
     }
 
