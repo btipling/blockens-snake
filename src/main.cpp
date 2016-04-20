@@ -284,9 +284,9 @@ void do_movement() {
         if (position_values[move_n][BlockType] == GrowBlock) {
             currentCountDown++;
         } else {
-            cur_tick_interval += speed_increase;
+            current_movement += speed_increase;
         }
-        if (cur_tick_interval > max_speed && rand() % 4 == 3)  {
+        if (current_movement > max_speed && rand() % 4 == 3)  {
             position_values[rand_n()][BlockType] = SpeedBlock;
         } else {
             position_values[rand_n()][BlockType] = GrowBlock;
@@ -327,7 +327,8 @@ void set_color(GLfloat to_color[4], GLfloat fro_color[4]) {
 }
 
 
-void setup_grid_vertices(GLuint vao[1]) {
+void setup_grid_vertices() {
+    GLuint vertex_array_object[1];
     GLuint buffers[1];
     const int n = 8;
     enum Attrib_IDS { vPosition = 0 };
@@ -346,8 +347,8 @@ void setup_grid_vertices(GLuint vao[1]) {
             { -1.0f, -1.0f, 1.0f, 1.0f },
     };
 
-    glGenVertexArrays(1, vao);
-    glBindVertexArray(vao[0]);
+    glGenVertexArrays(1, vertex_array_object);
+    glBindVertexArray(vertex_array_object[0]);
     glGenBuffers(1, buffers);
     glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -356,7 +357,8 @@ void setup_grid_vertices(GLuint vao[1]) {
 }
 
 
-void setup_block_vertices(GLuint vao[1]) {
+void setup_block_vertices() {
+    GLuint vertex_array_object[1];
     GLuint buffers[1];
     const int n = 6;
     enum Attrib_IDS { vPosition = 0 };
@@ -370,21 +372,21 @@ void setup_block_vertices(GLuint vao[1]) {
             { 1.0f, 1.0f, 1.0f, 1.0f },
     };
 
-    glGenVertexArrays(1, vao);
-    glBindVertexArray(vao[0]);
+    glGenVertexArrays(1, vertex_array_object);
+    glBindVertexArray(vertex_array_object[0]);
     glGenBuffers(1, buffers);
     glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
     glEnableVertexAttribArray(vPosition);
-    glDeleteBuffers(1, vao);
 }
 
 
-void setup_uniform(GLuint rendering_program, GLuint ubo) {
+void setup_uniform(GLuint rendering_program) {
 
     GLuint uboIndex;
     GLint uboSize;
+    GLuint ubo;
     enum { NumBlockenBlocks, GridColor, PositionValues, NumUniforms };
 
     const char *names[NumUniforms] = {
@@ -449,29 +451,24 @@ void setup_uniform(GLuint rendering_program, GLuint ubo) {
 
 
 void render_app(GLuint rendering_program, GLFWwindow *window) {
-    GLuint vao[1];
-    GLuint ubo;
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0, 1, 0, 1);
     glClearBufferfv(GL_COLOR, 0, bg_color);
 
     GLint is_block_index = glGetUniformLocation(rendering_program, "is_block_vertex");
     const GLuint numVertices = 8;
-    setup_uniform(rendering_program, ubo);
+    setup_uniform(rendering_program);
     glUseProgram(rendering_program);
 
     glUniform1i(is_block_index, GL_TRUE);
-
-    setup_block_vertices(vao);
+    setup_block_vertices();
     glDrawArraysInstanced(GL_TRIANGLES, 0, numVertices, num_columns * num_rows);
 
     glUniform1i(is_block_index, GL_FALSE);
-    setup_grid_vertices(vao);
+    setup_grid_vertices();
     glDrawArraysInstanced(GL_LINES, 0, numVertices, num_columns * num_rows);
 
     glfwSwapBuffers(window);
-    glDeleteBuffers(1, vao);
-    glDeleteBuffers(1, &ubo);
 }
 
 
