@@ -1,5 +1,12 @@
 #include <blocken.h>
 
+
+// FreeType.
+FT_Library ft;
+FT_Face face;
+FT_GlyphSlot g;
+
+
 // Declare colors.
 
 GLfloat blue_green[4];
@@ -19,9 +26,10 @@ GLfloat speed_block_color[4];
 
 // Declare buffers.
 
-GLuint vao[2];
-GLuint buffers[2];
+GLuint vao[3];
+GLuint buffers[3];
 GLuint ubo;
+GLuint tex;
 void *ubo_buffer;
 
 
@@ -119,15 +127,18 @@ int main() {
     std::cout << "Vendor: " << glGetString(GL_VENDOR) << std::endl;
     std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
 
-    GLuint rendering_program;
+    GLuint grid_program;
+    GLuint text_program;
 
     init_inputs(window);
     init_colors();
     init_positions();
+    init_freetype();
 
-    rendering_program = compile_shaders();
+    grid_program = compile_grid_program();
+    text_program = compile_text_program();
 
-    init_buffers(rendering_program);
+    init_buffers(grid_program);
 
     double lastTime = glfwGetTime();
 
@@ -142,31 +153,33 @@ int main() {
                 do_movement();
                 lastTime = now;
             }
-            render_app(rendering_program, window);
+            render_app(grid_program, window);
+            render_app_text(window, text_program);
+            glfwSwapBuffers(window);
         }
         glfwPollEvents();
     }
 
     glfwTerminate();
-    glDeleteProgram(rendering_program);
+    glDeleteProgram(grid_program);
     return 0;
 }
 
 
-void init_buffers(GLuint rendering_program) {
-    glGenVertexArrays(2, vao);
-    glGenBuffers(2, buffers);
+void init_buffers(GLuint grid_program) {
+    glGenVertexArrays(3, vao);
+    glGenBuffers(3, buffers);
     glGenBuffers(1, &ubo);
 
-    uboIndex = glGetUniformBlockIndex(rendering_program, "GridData");
-    glGetActiveUniformBlockiv(rendering_program, uboIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &uboSize);
-    glUniformBlockBinding(rendering_program, uboIndex, 0);
+    uboIndex = glGetUniformBlockIndex(grid_program, "GridData");
+    glGetActiveUniformBlockiv(grid_program, uboIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &uboSize);
+    glUniformBlockBinding(grid_program, uboIndex, 0);
 
-    glGetUniformIndices(rendering_program, NumUniforms, names, ubo_indexes);
-    glGetActiveUniformsiv(rendering_program, NumUniforms, ubo_indexes, GL_UNIFORM_OFFSET, ubo_offset);
-    glGetActiveUniformsiv(rendering_program, NumUniforms, ubo_indexes, GL_UNIFORM_SIZE, ubo_sizes);
-    glGetActiveUniformsiv(rendering_program, NumUniforms, ubo_indexes, GL_UNIFORM_TYPE, ubo_types);
-    glGetActiveUniformsiv(rendering_program, NumUniforms, ubo_indexes, GL_UNIFORM_ARRAY_STRIDE, ubo_strides);
+    glGetUniformIndices(grid_program, NumUniforms, names, ubo_indexes);
+    glGetActiveUniformsiv(grid_program, NumUniforms, ubo_indexes, GL_UNIFORM_OFFSET, ubo_offset);
+    glGetActiveUniformsiv(grid_program, NumUniforms, ubo_indexes, GL_UNIFORM_SIZE, ubo_sizes);
+    glGetActiveUniformsiv(grid_program, NumUniforms, ubo_indexes, GL_UNIFORM_TYPE, ubo_types);
+    glGetActiveUniformsiv(grid_program, NumUniforms, ubo_indexes, GL_UNIFORM_ARRAY_STRIDE, ubo_strides);
 
     set_color(grid_colors[NoBlock], line_color);
     set_color(grid_colors[BlockenBlock], blocken_block_color);
@@ -179,6 +192,30 @@ void init_buffers(GLuint rendering_program) {
         exit(EXIT_FAILURE);
     }
 
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+}
+
+
+void init_freetype() {
+    if(FT_Init_FreeType(&ft)) {
+        out("Could not init freetype library.");
+        exit(EXIT_FAILURE);
+    }
+
+
+    if(FT_New_Face(ft, "../resources/fonts/FreeSans.ttf", 0, &face)) {
+        out("Could not open font");
+        exit(EXIT_FAILURE);
+    }
+    FT_Set_Pixel_Sizes(face, 0, 48);
+    g = face->glyph;
 }
 
 
@@ -441,6 +478,75 @@ void setup_block_vertices() {
     glEnableVertexAttribArray(vPosition);
 }
 
+void render_app_text(GLFWwindow *window, GLuint text_program) {
+    enum Attrib_IDS { texcoord = 0 };
+
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    float sx = 2.0f/width;
+    float sy = 2.0f/height;
+
+    glUseProgram(text_program);
+//    GLfloat vertices[6][4] = {
+//            { -1.0f, -1.0f, 1.0f, 1.0f },
+//            { -1.0f, 1.0f, 1.0f, 1.0f },
+//            { 1.0f, 1.0f, 1.0f, 1.0f },
+//
+//            { -1.0f, -1.0f, 1.0f, 1.0f },
+//            { 1.0f, -1.0f, 1.0f, 1.0f },
+//            { 1.0f, 1.0f, 1.0f, 1.0f },
+//    };
+
+    glBindVertexArray(vao[2]);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers[2]);
+    glVertexAttribPointer(texcoord, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+    glEnableVertexAttribArray(texcoord);
+
+
+    render_text("X", 0.0f,   0.1f,  sx, sy);
+}
+
+void render_text(const char *text, float x, float y, float sx, float sy) {
+    const char *p;
+
+    for(p = text; *p; p++) {
+
+        if(FT_Load_Char(face, *p, FT_LOAD_RENDER)) {
+            continue;
+        }
+
+//        glTexImage2D(
+//            GL_TEXTURE_2D,
+//            0,
+//            GL_RED,
+//            g->bitmap.width,
+//            g->bitmap.rows,
+//            0,
+//            GL_RED,
+//            GL_UNSIGNED_BYTE,
+//            g->bitmap.buffer
+//        );
+
+        float x2 = x + g->bitmap_left * sx;
+        float y2 = -y - g->bitmap_top * sy;
+        float w = g->bitmap.width * sx;
+        float h = g->bitmap.rows * sy;
+
+        GLfloat box[4][4] = {
+                {x2,     -y2    , 0, 0},
+                {x2 + w, -y2    , 1, 0},
+                {x2,     -y2 - h, 0, 1},
+                {x2 + w, -y2 - h, 1, 1},
+        };
+        std::cout << "w: " << w << " h: " << h << " x2: " << x2 << " y2: " << -y2 << " x: " << x << " y: " << y << "\n";
+        glBufferData(GL_ARRAY_BUFFER, sizeof(box), box, GL_DYNAMIC_DRAW);
+        glPointSize(40.0f);
+        glDrawArrays(GL_POINTS, 0, 4);
+
+        x += (g->advance.x/64) * sx;
+        y += (g->advance.y/64) * sy;
+    }
+}
 
 void setup_uniform() {
 
@@ -468,15 +574,15 @@ void setup_uniform() {
 }
 
 
-void render_app(GLuint rendering_program, GLFWwindow *window) {
+void render_app(GLuint grid_program, GLFWwindow *window) {
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0, 1, 0, 1);
     glClearBufferfv(GL_COLOR, 0, bg_color);
 
-    GLint is_block_index = glGetUniformLocation(rendering_program, "is_block_vertex");
+    GLint is_block_index = glGetUniformLocation(grid_program, "is_block_vertex");
     const GLuint numVertices = 8;
     setup_uniform();
-    glUseProgram(rendering_program);
+    glUseProgram(grid_program);
 
     glUniform1i(is_block_index, GL_TRUE);
     setup_block_vertices();
@@ -485,58 +591,49 @@ void render_app(GLuint rendering_program, GLFWwindow *window) {
     glUniform1i(is_block_index, GL_FALSE);
     setup_grid_vertices();
     glDrawArraysInstanced(GL_LINES, 0, numVertices, num_columns * num_rows);
-
-    glfwSwapBuffers(window);
 }
 
-
-GLuint compile_shaders(void) {
-    GLuint vertex_shader;
-    GLuint fragment_shader;
-    GLuint program;
-
-    std::string vertex_shader_source_string = get_shader("grid.vert");
-    const GLchar * vertex_shader_source = vertex_shader_source_string.c_str();
-
-    std::string fragment_shader_source_string = get_shader("grid.frag");
-    const GLchar * fragment_shader_source = fragment_shader_source_string.c_str();
-
-    vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
-    glCompileShader(vertex_shader);
+GLuint compile_shader(std::string filename, GLenum type) {
+    GLuint shader;
+    std::string shader_source_string = get_shader(filename);
+    const GLchar * shader_source = shader_source_string.c_str();  shader = glCreateShader(type);
+    glShaderSource(shader, 1, &shader_source, NULL);
+    glCompileShader(shader);
 
     GLint success;
     GLint log_size;
 
-    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
-    glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH, &log_size);
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &log_size);
 
     if (success != GL_TRUE) {
-        std::cout << "Vertex shader didn't compile homes.  " << log_size << " \n";
+        std::cout << filename << " shader didn't compile.  " << log_size << " \n";
         char* log = new char[log_size];
-        glGetShaderInfoLog(vertex_shader, log_size, NULL, log);
-        std::cout << "Vertex shader error log: \n" << log << " \n";
+        glGetShaderInfoLog(shader, log_size, NULL, log);
+        std::cout << filename << " shader error log: \n" << log << " \n";
         exit(EXIT_FAILURE);
     } else {
-        std::cout << "Vertex shader did compile homes. " << log_size << " \n";
+        std::cout << filename <<  " shader did compile. " << log_size << " \n";
     }
 
-    fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &fragment_shader_source, NULL);
-    glCompileShader(fragment_shader);
+    return shader;
+};
 
-    glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
-    glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH, &log_size);
+GLuint compile_text_program() {
+    return compile_shaders("text.vert", "text.frag");
+}
 
-    if (success != GL_TRUE) {
-        std::cout << "Frag shader didn't compile homes. " << log_size << " \n";
-        char* log = new char[log_size];
-        glGetShaderInfoLog(fragment_shader, log_size, NULL, log);
-        std::cout << "Frag shader error log: \n" << log << " \n";
-        exit(EXIT_FAILURE);
-    } else {
-        std::cout << "Frag shader did compile homes. " << log_size << " \n";
-    }
+GLuint compile_grid_program() {
+    return compile_shaders("grid.vert", "grid.frag");
+}
+
+GLuint compile_shaders(std::string vert_shader_name, std::string frag_shader_name) {
+    GLuint vertex_shader;
+    GLuint fragment_shader;
+    GLuint program;
+
+    vertex_shader = compile_shader(vert_shader_name, GL_VERTEX_SHADER);
+    fragment_shader = compile_shader(frag_shader_name, GL_FRAGMENT_SHADER);
 
     program = glCreateProgram();
     glAttachShader(program, vertex_shader);

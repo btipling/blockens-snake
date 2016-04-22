@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <cmath>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 // Helper macros.
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
@@ -20,6 +22,7 @@ void init_colors();
 void init_inputs(GLFWwindow*);
 void init_positions();
 void init_buffers(GLuint);
+void init_freetype();
 
 // Setup writing data to GPU for each draw.
 void setup_uniform();
@@ -27,9 +30,14 @@ void setup_grid_vertices();
 void setup_block_vertices();
 
 // Rendering.
-std::string get_shader(std::string path);
-GLuint compile_shaders();
+GLuint compile_shaders(std::string, std::string);
+std::string get_shader(std::string);
+GLuint compile_shader(std::string, GLenum);
+GLuint compile_grid_program();
+GLuint compile_text_program();
 void render_app(GLuint, GLFWwindow*);
+void render_text(const char*, float, float, float, float);
+void render_app_text(GLFWwindow *, GLuint);
 
 // Movement.
 void n_to_xy(int, int*, int*);

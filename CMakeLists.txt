@@ -10,7 +10,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 find_package(OpenGL)
 
 set(GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extern/glfw)
+set(FREETYPE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extern/freetype)
+
 include_directories(${GLFW_DIR}/include)
+include_directories(${FREETYPE_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 set(PLATFORM_LIBS "")
@@ -28,6 +31,7 @@ if(APPLE)
             ${CORE_FOUNDATION_FRAMEWORK}
             ${CORE_VIDEO_FRAMEWORK}
             ${GLFW_DIR}/lib/libglfw3.a
+            ${FREETYPE_DIR}/lib/libfreetyped.a
     )
 endif()
 

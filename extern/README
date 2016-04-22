@@ -1,1 +1,3 @@
-Don't delete directory. Put glfw in here.
+Don't delete directory. Put glfw and freetype in here.
+
+For freetype be sure to comment out or not include any references to bzip, png zlib.
