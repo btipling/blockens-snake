@@ -4,7 +4,12 @@
   <component name="CidrRootsConfiguration">
     <sourceRoots />
     <libraryRoots />
-    <excludeRoots />
+    <excludeRoots>
+      <file path="$PROJECT_DIR$/extern/freetype" />
+      <file path="$PROJECT_DIR$/extern/glfw" />
+      <file path="$PROJECT_DIR$/extern/libpng" />
+      <file path="$PROJECT_DIR$/extern/zlib" />
+    </excludeRoots>
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="false">
     <OptionsSetting value="true" id="Add" />

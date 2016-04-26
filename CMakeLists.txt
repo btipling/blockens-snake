@@ -10,7 +10,11 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 find_package(OpenGL)
 
 set(GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extern/glfw)
+set(ZLIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extern/zlib)
+set(PNG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extern/libpng)
 include_directories(${GLFW_DIR}/include)
+include_directories(${ZLIB_DIR})
+include_directories(${PNG_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 set(PLATFORM_LIBS "")
@@ -28,6 +32,8 @@ if(APPLE)
             ${CORE_FOUNDATION_FRAMEWORK}
             ${CORE_VIDEO_FRAMEWORK}
             ${GLFW_DIR}/lib/libglfw3.a
+            ${ZLIB_DIR}/libz.a
+            ${PNG_DIR}/.libs/libpng16.a
     )
 endif()
 

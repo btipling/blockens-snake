@@ -10,6 +10,10 @@
 #include <stdlib.h>
 #include <time.h>
 #include <cmath>
+#include <png.h>
+
+
+typedef unsigned int png_uint_32;
 
 // Helper macros.
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
